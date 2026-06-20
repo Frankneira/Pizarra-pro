@@ -1,0 +1,2019 @@
+<!DOCTYPE html><html lang="es"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FF8C00">
+    <link rel="manifest" href="./manifest.json">
+    
+    <title>Pizarra Digital Pro+ | Edición Docente | Gratis e Ilimitada</title>
+    <meta name="description" content="Pizarra digital profesional y online. Incluye visor web, herramientas de dibujo, exportación en PDF e imagen. Disfruta de la versión PRO totalmente gratis y potencia tus clases virtuales sin límites de escritura.">
+    <meta name="keywords" content="pizarra digital, pizarra virtual, pizarra online, pizarra interactiva, dar clases online, herramientas docentes, pizarra para profesores, versión gratis, software educativo, pizarra digital pro">
+    <meta name="robots" content="index, follow">
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/screenfull@5.2.0/dist/screenfull.min.js">
+    </script>
+
+    <!-- ========================================== -->
+    <!-- CAPA 1: ESTILOS CSS - DISEÑO Y COMPONENTES -->
+    <!-- ========================================== -->
+    <style>
+        :root {
+            --bg-primary: #0A1420;
+            --bg-surface: #1A2436;
+            --accent: #FF8C00;
+            --text-primary: #FFFFFF;
+            --text-secondary: #8A9BAE;
+            --border-color: #2a3a4e;
+        }
+        * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-surface); }
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-track { background: var(--bg-surface); border-radius: 4px; }
+        *::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+        body { background-color: var(--bg-primary); color: var(--text-primary); }
+        
+        [data-tooltip] { position: relative; }
+        [data-tooltip]:before {
+            content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: var(--bg-surface); color: var(--text-primary); padding: 6px 10px; border-radius: 8px; font-size: 12px;
+            white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+            margin-bottom: 8px; font-weight: 500; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid var(--border-color);
+        }
+        [data-tooltip]:hover:before { opacity: 1; }
+        
+        .tool-active { 
+            background-color: var(--accent) !important; 
+            color: #0A1420 !important; 
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.4);
+        }
+        
+        .quick-tool-horizontal {
+            display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+            border-radius: 10px; background-color: var(--bg-surface); color: var(--text-secondary);
+            transition: all 0.2s; border: 1px solid var(--border-color); outline: none;
+        }
+        .quick-tool-horizontal:hover { background-color: var(--accent); color: #0A1420; transform: translateY(-1px); }
+        #canvas-container { background-color: #F8F9FA; outline: none; }
+        #canvas-container::-webkit-scrollbar { width: 8px; height: 8px; }
+        #canvas-container::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 4px; }
+        .pages-scrollbar::-webkit-scrollbar { height: 4px; }
+        .pages-scrollbar::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 4px; }
+        .page-tab { transition: all 0.2s; white-space: nowrap; background-color: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); outline: none;}
+        .page-tab.active { background-color: var(--accent); color: #0A1420; border-color: var(--accent); font-weight: bold;}
+        .resize-handle { width: 6px; cursor: ew-resize; background-color: var(--border-color); transition: background-color 0.2s; }
+        .resize-handle:hover { background-color: var(--accent); }
+        .floating-toolbar { background-color: rgba(26, 36, 54, 0.95); backdrop-filter: blur(8px); border: 1px solid var(--border-color); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+        input, select, button { background-color: var(--bg-surface); color: var(--text-primary); border-color: var(--border-color); outline: none; }
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+        
+        .scroller-hidden { scrollbar-width: none; }
+        .scroller-hidden::-webkit-scrollbar { display: none; }
+
+        /* CAPA 1.1: ESTILOS BARRA FLOTANTE - DRAG Y MINIMIZAR */
+        #floating-toolbar {
+            transition: left 0.05s ease-out, top 0.05s ease-out, opacity 0.3s ease;
+            user-select: none;
+        }
+        #floating-toolbar.dragging {
+            transition: none !important;
+            opacity: 0.9;
+            cursor: grabbing;
+        }
+        #toolbar-drag-handle {
+            cursor: grab;
+            font-size: 18px;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+        #toolbar-drag-handle:active {
+            cursor: grabbing;
+        }
+        /* botón flotante minimizado */
+        #mini-toolbar-btn {
+            transition: transform 0.2s ease, opacity 0.3s ease;
+            z-index: 50;
+        }
+        #mini-toolbar-btn:hover {
+            transform: scale(1.15);
+        }
+        /* animación de pulso suave cuando está minimizado */
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.6); }
+            50% { box-shadow: 0 0 0 12px rgba(255, 140, 0, 0); }
+        }
+        .mini-pulse {
+            animation: softPulse 2.5s infinite;
+        }
+        /* Asegurar que los dropdowns dentro de la barra flotante no queden ocultos */
+        .toolbar-scroll-area {
+            overflow: visible;
+        }
+    </style>
+</head>
+<body class="bg-[#0A1420] h-screen flex flex-col overflow-hidden font-sans">
+
+    <input type="file" id="main-file-input" class="hidden" accept="*/*">
+
+    <!-- ========================================== -->
+    <!-- CAPA 2: BARRA SUPERIOR REDUCIDA (solo compartir y pantalla completa) -->
+    <!-- ========================================== -->
+    <div class="bg-[#1A2436] shadow-lg border-b border-[#2a3a4e] px-4 py-1.5 flex items-center justify-end z-30 relative gap-2">
+        <button id="share-btn" class="px-3 py-2 text-xs bg-blue-900 text-blue-100 border border-blue-800 rounded-lg hover:bg-blue-700 transition flex items-center gap-2" data-tooltip="Compartir Sala"><i class="fas fa-share-alt"></i> <span class="hidden sm:inline">Compartir</span></button>
+        <button id="fullscreen-btn" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-white bg-[#0A1420] border border-[#2a3a4e] rounded-lg transition" data-tooltip="Pantalla Completa"><i class="fas fa-expand"></i></button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CAPA 3: ÁREA PRINCIPAL - LIENZO Y VISORES -->
+    <!-- ========================================== -->
+    <div class="flex flex-1 overflow-hidden relative" id="main-area">
+        <div id="canvas-container" class="flex-1 overflow-auto outline-none relative" tabindex="0">
+            <div id="context-menu" class="hidden absolute bg-[#1A2436] border border-[#2a3a4e] p-1.5 rounded-lg shadow-xl flex gap-1 z-50 transition-opacity items-center">
+                <button id="ctx-copy" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Copiar (Ctrl+C)"><i class="fas fa-copy"></i></button>
+                <button id="ctx-paste" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Duplicar"><i class="fas fa-paste"></i></button>
+                <button id="ctx-cut" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Cortar (Ctrl+X)"><i class="fas fa-cut"></i></button>
+                <button id="ctx-delete" class="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-600 hover:text-white rounded transition" data-tooltip="Borrar (Supr)"><i class="fas fa-trash"></i></button>
+                <div id="ctx-sep" class="w-px h-6 bg-[#2a3a4e] mx-0.5"></div>
+                <button id="ctx-group" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Agrupar"><i class="fas fa-object-group"></i></button>
+                <button id="ctx-ungroup" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Desagrupar"><i class="fas fa-object-ungroup"></i></button>
+                <button id="ctx-add-text" class="w-8 h-8 flex items-center justify-center text-white hover:bg-[#FF8C00] hover:text-black rounded transition" data-tooltip="Añadir Texto"><i class="fas fa-font"></i></button>
+                
+                <div id="ctx-shape-sep" class="w-px h-6 bg-[#2a3a4e] mx-0.5 hidden"></div>
+                <label id="ctx-fill-label" class="hidden items-center gap-1 text-white text-xs cursor-pointer hover:text-[#FF8C00] transition px-1" data-tooltip="Rellenar">
+                    <input type="checkbox" id="ctx-fill-cb" class="cursor-pointer">
+                    <i class="fas fa-paint-brush"></i>
+                </label>
+            </div>
+
+            <canvas id="canvas" width="8000" height="6000" style="width:8000px; height:6000px;"></canvas>
+        </div>
+        
+        <div id="resize-handle" class="resize-handle w-1.5 bg-[#2a3a4e] hover:bg-[#FF8C00] transition-all cursor-ew-resize"></div>
+        
+        <div id="doc-viewer" class="bg-[#1A2436] border-l border-[#2a3a4e] shadow-xl z-20 flex flex-col hidden" style="width: 400px; min-width: 280px; max-width: 80vw;">
+            <div class="flex justify-between items-center p-4 border-b border-[#2a3a4e] bg-[#0A1420]">
+                <h3 class="font-semibold text-white"><i class="fas fa-file-alt mr-2 text-[#FF8C00]"></i>Visor de Archivo</h3>
+                <button id="close-viewer" class="text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="viewer-content" class="flex-1 overflow-auto p-2 bg-[#0A1420] flex items-center justify-center"></div>
+        </div>
+
+        <div id="web-viewer" class="bg-[#1A2436] border-l border-[#2a3a4e] shadow-xl z-20 flex flex-col hidden" style="width: 500px; min-width: 320px; max-width: 85vw;">
+            <div class="flex flex-col border-b border-[#2a3a4e] bg-[#0A1420]">
+                <div class="flex justify-between items-center p-3 border-b border-[#2a3a4e]">
+                    <h3 class="font-semibold text-white"><i class="fab fa-google mr-2 text-[#FF8C00]"></i>Navegador Web</h3>
+                    <button id="close-web-viewer" class="text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="flex gap-2 p-2 bg-[#1A2436]">
+                    <input type="text" id="web-url-input" class="flex-1 bg-[#0A1420] text-white px-3 py-1.5 rounded-lg border border-[#2a3a4e] text-sm" placeholder="Buscar en Google o ingresar URL...">
+                    <button id="web-go-btn" class="bg-[#FF8C00] text-black px-4 py-1.5 rounded-lg hover:bg-[#e07e00] transition font-bold"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-hidden relative">
+                <iframe id="web-iframe" src="https://www.google.com/webhp?igu=1" style="width:100%; height:100%; border:none; background-color: white;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CAPA 3.1: BARRA FLOTANTE - HERRAMIENTAS INTEGRADAS (DRAGGABLE Y MINIMIZABLE) -->
+        <!-- ========================================== -->
+        <div id="floating-toolbar" class="floating-toolbar absolute flex items-center gap-2 p-2 rounded-2xl z-40 justify-center w-max max-w-[95vw]" style="bottom: 5rem; left: 50%; transform: translateX(-50%); overflow: visible;">
+            <!-- Área con desplazamiento horizontal para todos los controles -->
+            <div class="toolbar-scroll-area flex items-center gap-2 flex-shrink-0" style="max-width: 100%;">
+                <!-- Handle de arrastre -->
+                <span id="toolbar-drag-handle" class="cursor-grab px-1 text-gray-500 hover:text-white select-none text-lg leading-none flex-shrink-0" title="Arrastrar para mover la barra">⋮⋮</span>
+                
+                <!-- ========================================== -->
+                <!-- SECCIÓN: HERRAMIENTAS RÁPIDAS BÁSICAS -->
+                <!-- ========================================== -->
+                <button id="select-btn-float" class="quick-tool-horizontal" data-tooltip="Seleccionar (V)"><i class="fas fa-mouse-pointer"></i></button>
+                <button id="pan-btn-float" class="quick-tool-horizontal" data-tooltip="Mover Pizarra"><i class="far fa-hand-paper"></i></button>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: LÁPIZ CON COLOR Y GROSOR INTEGRADO -->
+                <!-- ========================================== -->
+                <div class="relative">
+                    <button id="draw-btn-float" class="quick-tool-horizontal text-[#FF8C00]" style="border-color: #FF8C00;" data-tooltip="Lápiz (P)"><i class="fas fa-pencil-alt"></i></button>
+                    <div id="drop-lapiz" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
+                        <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
+                            <span class="text-xs text-gray-400 font-semibold">Grosor:</span>
+                            <input type="number" id="brush-size-num" min="1" max="50" value="5" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
+                            <input type="color" id="brush-color" value="#000000" class="w-7 h-7 rounded-md cursor-pointer border-0 p-0 ml-1">
+                        </div>
+                        <div class="flex gap-1.5 justify-center">
+                            <button data-color="#FFFFFF" class="color-quick w-6 h-6 rounded-full bg-white border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#000000" class="color-quick w-6 h-6 rounded-full bg-black border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#1e3a8a" class="color-quick w-6 h-6 rounded-full bg-blue-900 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#15803d" class="color-quick w-6 h-6 rounded-full bg-green-700 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#b91c1c" class="color-quick w-6 h-6 rounded-full bg-red-700 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#eab308" class="color-quick w-6 h-6 rounded-full bg-yellow-500 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-color="#f97316" class="color-quick w-6 h-6 rounded-full bg-orange-500 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: RESALTADOR CON COLOR INTEGRADO -->
+                <!-- ========================================== -->
+                <div class="relative">
+                    <button id="highlighter-btn-float" class="quick-tool-horizontal text-[#FF8C00]" style="border-color: #FF8C00;" data-tooltip="Resaltador (H)"><i class="fas fa-highlighter"></i></button>
+                    <div id="drop-resaltador" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
+                        <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
+                            <span class="text-xs text-gray-400 font-semibold">Grosor:</span>
+                            <input type="number" id="highlighter-size-num" min="10" max="100" value="25" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
+                        </div>
+                        <div class="flex gap-2 justify-center">
+                            <button data-hcolor="rgba(255, 235, 59, 0.4)" class="h-color-quick w-7 h-7 rounded-md bg-yellow-400 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-hcolor="rgba(76, 175, 80, 0.4)" class="h-color-quick w-7 h-7 rounded-md bg-green-400 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-hcolor="rgba(33, 150, 243, 0.4)" class="h-color-quick w-7 h-7 rounded-md bg-blue-400 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                            <button data-hcolor="rgba(233, 30, 99, 0.4)" class="h-color-quick w-7 h-7 rounded-md bg-pink-500 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
+                        </div>
+                    </div>
+                </div>
+                <button id="eraser-btn-float" class="quick-tool-horizontal" data-tooltip="Borrador (E)"><i class="fas fa-eraser"></i></button>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: TEXTO Y NOTA RÁPIDA + FUENTE -->
+                <!-- ========================================== -->
+                <button id="text-btn-float" class="quick-tool-horizontal" data-tooltip="Texto (T)"><i class="fas fa-font"></i></button>
+                <button id="sticky-btn-float" class="quick-tool-horizontal" data-tooltip="Nota Rápida"><i class="far fa-sticky-note"></i></button>
+                <div class="relative">
+                    <button id="toggle-fuente" class="w-10 h-10 flex items-center justify-center bg-[#0A1420] rounded-lg border border-[#2a3a4e] hover:bg-[#FF8C00] hover:text-[#0A1420] text-[#FF8C00] transition" data-tooltip="Editor de Texto">
+                        <i class="fas fa-text-height"></i>
+                    </button>
+                    <div id="drop-fuente" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
+                        <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
+                            <select id="font-family-select" class="text-xs border border-[#2a3a4e] rounded-md bg-[#1A2436] text-white py-1.5 px-2 w-32 outline-none focus:border-[#FF8C00]">
+                                <option value="Arial">Arial</option>
+                                <option value="Arial Narrow">Arial Narrow</option>
+                                <option value="Poppins">Poppins</option>
+                                <option value="Bahnschrift">Bahnschrift SemiBold</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Georgia">Georgia</option>
+                            </select>
+                            <select id="font-size-select" class="text-xs border border-[#2a3a4e] rounded-md bg-[#1A2436] text-white py-1.5 px-2 outline-none focus:border-[#FF8C00]">
+                                <option value="16" selected>16px</option>
+                                <option value="20">20px</option>
+                                <option value="24">24px</option>
+                                <option value="36">36px</option>
+                                <option value="48">48px</option>
+                                <option value="64">64px</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2 justify-center bg-[#1A2436] p-1.5 rounded-lg border border-[#2a3a4e]">
+                            <button id="text-bold-btn" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:bg-[#0A1420] hover:text-white rounded text-sm transition" data-tooltip="Negrita"><i class="fas fa-bold"></i></button>
+                            <button id="text-italic-btn" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:bg-[#0A1420] hover:text-white rounded text-sm transition" data-tooltip="Cursiva"><i class="fas fa-italic"></i></button>
+                            <button id="text-case-btn" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:bg-[#0A1420] hover:text-white rounded text-sm font-bold transition" data-tooltip="Mayús/Minús">Aa</button>
+                            <div class="w-px h-5 bg-[#2a3a4e] mx-1"></div>
+                            <div class="flex items-center gap-1" data-tooltip="Color Texto">
+                                <i class="fas fa-palette text-gray-500 text-[10px]"></i>
+                                <input type="color" id="text-color-btn" value="#000000" class="w-6 h-6 rounded cursor-pointer border-0 p-0">
+                            </div>
+                            <div class="flex items-center gap-1" data-tooltip="Color Fondo">
+                                <i class="fas fa-fill-drip text-gray-500 text-[10px]"></i>
+                                <input type="color" id="text-bg-btn" value="#000000" class="w-6 h-6 rounded cursor-pointer border-0 p-0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: FORMAS (LÍNEAS, 2D, 3D) -->
+                <!-- ========================================== -->
+                <button id="panel-lines-btn" class="quick-tool-horizontal text-[#FF8C00]" style="border-color: #FF8C00;" data-tooltip="Líneas y Flechas"><i class="fas fa-wave-square"></i></button>
+                <button id="panel-shapes2d-btn" class="quick-tool-horizontal text-[#FF8C00]" style="border-color: #FF8C00;" data-tooltip="Geometría 2D"><i class="fas fa-shapes"></i></button>
+                <button id="panel-shapes3d-btn" class="quick-tool-horizontal text-[#FF8C00]" style="border-color: #FF8C00;" data-tooltip="Figuras 3D"><i class="fas fa-cube"></i></button>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: COLOR DE PIZARRA -->
+                <!-- ========================================== -->
+                <div class="relative">
+                    <button id="toggle-pizarra" class="w-10 h-10 flex items-center justify-center bg-[#0A1420] rounded-lg border border-[#2a3a4e] hover:bg-[#FF8C00] hover:text-[#0A1420] text-[#FF8C00] transition" data-tooltip="Color de Pizarra">
+                        <i class="fas fa-chalkboard"></i>
+                    </button>
+                    <div id="drop-pizarra" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-2.5 rounded-xl shadow-2xl flex gap-3 z-50 w-max">
+                        <button id="bg-black" class="w-8 h-8 rounded-lg bg-black border border-[#2a3a4e] hover:scale-110 transition shadow-sm" data-tooltip="Pizarra Negra"></button>
+                        <button id="bg-white" class="w-8 h-8 rounded-lg bg-[#F8F9FA] border border-[#2a3a4e] hover:scale-110 transition shadow-sm" data-tooltip="Pizarra Blanco Mate"></button>
+                        <button id="bg-green" class="w-8 h-8 rounded-lg bg-[#064E3B] border border-[#2a3a4e] hover:scale-110 transition shadow-sm" data-tooltip="Pizarra Verde Oscuro"></button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <button id="grid-btn" class="quick-tool-horizontal" data-tooltip="Líneas Guía"><i class="fas fa-th"></i></button>
+                    <div id="drop-grid" class="hidden absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">Espaciado:</span>
+                            <input type="range" id="grid-spacing" min="20" max="120" value="50" class="flex-1" style="accent-color:#FF8C00;">
+                            <span id="grid-spacing-val" class="text-xs text-[#FF8C00] font-mono w-8 text-right">50</span>
+                        </div>
+                        <div class="flex gap-2 justify-center">
+                            <button id="grid-on-btn" class="px-3 py-1.5 text-xs bg-[#1A2436] text-green-400 border border-[#2a3a4e] rounded-lg hover:bg-[#FF8C00] hover:text-[#0A1420] font-bold transition"><i class="fas fa-border-all mr-1"></i> Activar</button>
+                            <button id="grid-off-btn" class="px-3 py-1.5 text-xs bg-[#1A2436] text-red-400 border border-[#2a3a4e] rounded-lg hover:bg-red-600 hover:text-white font-bold transition"><i class="fas fa-times mr-1"></i> Quitar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: DESHACER, REHACER, BORRAR -->
+                <!-- ========================================== -->
+                <div class="flex items-center gap-1 bg-[#0A1420] rounded-lg p-1 border border-[#2a3a4e]">
+                    <button id="undo-btn" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#FF8C00] hover:bg-[#1A2436] rounded transition" data-tooltip="Deshacer (Ctrl+Z)"><i class="fas fa-undo-alt text-sm"></i></button>
+                    <button id="redo-btn" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#FF8C00] hover:bg-[#1A2436] rounded transition" data-tooltip="Rehacer (Ctrl+Y)"><i class="fas fa-redo-alt text-sm"></i></button>
+                    <div class="w-px h-5 bg-[#2a3a4e] mx-0.5"></div>
+                    <button id="sel-delete-btn" class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-[#1A2436] rounded transition" data-tooltip="Borrar Selección"><i class="fas fa-trash text-sm"></i></button>
+                    <button id="clear-btn" class="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-[#1A2436] rounded transition" data-tooltip="Limpiar Pizarra"><i class="fas fa-broom text-sm"></i></button>
+                </div>
+                <div class="w-px h-6 bg-[#2a3a4e] mx-1 min-w-[1px]"></div>
+
+                <!-- ========================================== -->
+                <!-- SECCIÓN: GUARDAR Y HERRAMIENTAS PRO -->
+                <!-- ========================================== -->
+                <div class="relative">
+                    <button id="toggle-guardar" class="w-10 h-10 flex items-center justify-center bg-[#0A1420] rounded-lg border border-[#2a3a4e] hover:bg-[#FF8C00] hover:text-[#0A1420] text-[#FF8C00] transition" data-tooltip="Guardar Pizarra">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <div id="drop-guardar" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-2 rounded-xl shadow-2xl flex flex-col gap-2 z-50 w-max">
+                        <button id="export-img-btn" class="px-4 py-2.5 text-xs bg-[#1A2436] text-green-400 border border-[#2a3a4e] rounded-lg hover:bg-[#FF8C00] hover:text-[#0A1420] font-bold transition flex items-center"><i class="fas fa-image w-5 text-center"></i> Guardar Imagen</button>
+                        <button id="export-pdf-btn" class="px-4 py-2.5 text-xs bg-[#1A2436] text-red-400 border border-[#2a3a4e] rounded-lg hover:bg-[#FF8C00] hover:text-[#0A1420] font-bold transition flex items-center"><i class="fas fa-file-pdf w-5 text-center"></i> Exportar PDF</button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <button id="toggle-pro" class="w-10 h-10 flex items-center justify-center bg-[#0A1420] rounded-lg border border-[#2a3a4e] hover:bg-[#FF8C00] hover:text-[#0A1420] text-[#FF8C00] font-bold text-[10px] uppercase tracking-wider transition" data-tooltip="Herramientas Pro (Gratis)">
+                        Pro
+                    </button>
+                    <div id="drop-pro" class="hidden absolute bottom-full mb-2 left-0 sm:auto sm:right-0 bg-[#0A1420] border border-[#2a3a4e] p-2 rounded-xl shadow-2xl flex flex-col gap-2 z-50 w-max">
+                        <button id="attach-file-btn" class="px-4 py-2 text-xs text-gray-300 hover:text-white bg-[#1A2436] border border-[#2a3a4e] rounded-lg hover:border-[#FF8C00] transition flex items-center"><i class="fas fa-paperclip w-5 text-center"></i> Adjuntar Archivo</button>
+                        <button id="web-viewer-btn" class="px-4 py-2 text-xs text-gray-300 hover:text-white bg-[#1A2436] border border-[#2a3a4e] rounded-lg hover:border-[#FF8C00] transition flex items-center"><i class="fas fa-globe w-5 text-center"></i> Navegador Web</button>
+                        <button id="calculator-btn" class="px-4 py-2 text-xs text-gray-300 hover:text-white bg-[#1A2436] border border-[#2a3a4e] rounded-lg hover:border-[#FF8C00] transition flex items-center"><i class="fas fa-calculator w-5 text-center"></i> Calculadora</button>
+                        <button id="record-btn" class="px-4 py-2 text-xs text-red-400 hover:text-red-300 bg-[#1A2436] border border-[#2a3a4e] rounded-lg hover:border-red-500 transition flex items-center"><i class="fas fa-record-vinyl w-5 text-center"></i> Grabar Clase</button>
+                    </div>
+                </div>
+                <!-- Botón para minimizar la barra (dentro del área de desplazamiento) -->
+                <button id="toolbar-minimize-btn" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white rounded transition ml-1 flex-shrink-0" title="Minimizar barra"><i class="fas fa-chevron-down text-xs"></i></button>
+            </div>
+        </div>
+
+        <!-- Botón flotante que aparece cuando la barra está minimizada -->
+        <button id="mini-toolbar-btn" class="hidden absolute w-11 h-11 rounded-full bg-[#FF8C00] text-[#0A1420] shadow-lg z-50 flex items-center justify-center transition-transform duration-200 mini-pulse" style="bottom: 5rem; left: 50%; transform: translateX(-50%);" title="Mostrar herramientas"><i class="fas fa-pencil-alt text-lg"></i></button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CAPA 4: PANELES DE FORMAS (LÍNEAS, 2D, 3D) -->
+    <!-- ========================================== -->
+    <div id="lines-panel" class="hidden absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-[#1A2436] border border-[#2a3a4e] p-4 rounded-xl shadow-2xl z-50 w-72">
+        <div class="flex justify-between items-center mb-3 border-b border-[#2a3a4e] pb-2">
+            <span class="text-white font-semibold text-sm"><i class="fas fa-pen-nib text-[#FF8C00] mr-2"></i>Líneas y Flechas</span>
+            <button class="close-panel-btn text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="line-v" title="Vertical"><i class="fas fa-minus transform rotate-90"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="line-h" title="Horizontal"><i class="fas fa-minus"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="line-dashed" title="Línea Punteada"><i class="fas fa-ellipsis-h"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="line-diagonal" title="Diagonal"><i class="fas fa-slash"></i></button>
+            
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-left" title="Flecha Izquierda"><i class="fas fa-long-arrow-alt-left"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-1" title="Flecha Derecha"><i class="fas fa-long-arrow-alt-right"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-up" title="Flecha Arriba"><i class="fas fa-long-arrow-alt-up"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-down" title="Flecha Abajo"><i class="fas fa-long-arrow-alt-down"></i></button>
+            
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-2" title="Doble Flecha Horizontal"><i class="fas fa-arrows-alt-h"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="arrow-v-double" title="Doble Flecha Vertical"><i class="fas fa-arrows-alt-v"></i></button>
+            <button class="add-shape-btn text-xl text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="curve" title="Curva"><i class="fas fa-bezier-curve"></i></button>
+        </div>
+    </div>
+
+    <div id="shapes2d-panel" class="hidden absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-[#1A2436] border border-[#2a3a4e] p-4 rounded-xl shadow-2xl z-50 w-72">
+        <div class="flex justify-between items-center mb-3 border-b border-[#2a3a4e] pb-2">
+            <span class="text-white font-semibold text-sm"><i class="fas fa-shapes text-[#FF8C00] mr-2"></i>Figuras 2D</span>
+            <div class="flex items-center gap-3">
+                <label class="text-xs text-gray-300 flex items-center gap-1 cursor-pointer hover:text-white transition" title="Rellenar figura con el Color de Fondo">
+                    <input type="checkbox" class="fill-shape-cb cursor-pointer"> Rellenar
+                </label>
+                <button class="close-panel-btn text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="square" title="Cuadrado">⬛</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="rectangle" title="Rectángulo">▭</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="rhombus" title="Rombo">◇</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="trapezoid" title="Trapecio">⏢</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="tri-equilateral" title="Triángulo Equilátero">△</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="tri-isosceles" title="Triángulo Isósceles">◬</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="tri-scalene" title="Triángulo Escaleno">⊿</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="pentagon" title="Pentágono">⬟</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="hexagon" title="Hexágono">⬡</button>
+            <button class="add-shape-btn text-xs font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="heptagon" title="Heptágono">7L</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="octagon" title="Octágono">⯄</button>
+            <button class="add-shape-btn text-xs font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="nonagon" title="Nonágono">9L</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="circle" title="Círculo">◯</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="ellipse" title="Elipse">⬭</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="parallelogram" title="Paralelogramo">▱</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="star" title="Estrella">★</button>
+        </div>
+    </div>
+
+    <div id="shapes3d-panel" class="hidden absolute bottom-40 left-1/2 transform -translate-x-1/2 bg-[#1A2436] border border-[#2a3a4e] p-4 rounded-xl shadow-2xl z-50 w-72">
+        <div class="flex justify-between items-center mb-3 border-b border-[#2a3a4e] pb-2">
+            <span class="text-white font-semibold text-sm"><i class="fas fa-cube text-[#FF8C00] mr-2"></i>Figuras 3D</span>
+            <div class="flex items-center gap-3">
+                <label class="text-xs text-gray-300 flex items-center gap-1 cursor-pointer hover:text-white transition" title="Rellenar figura con el Color de Fondo">
+                    <input type="checkbox" class="fill-shape-cb cursor-pointer"> Rellenar
+                </label>
+                <button class="close-panel-btn text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="cube" title="Cubo"><i class="fas fa-cube"></i></button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="prism" title="Prisma">Prism</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="pyramid" title="Pirámide">⛺</button>
+            <button class="add-shape-btn text-sm font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="tetrahedron" title="Tetraedro">Tetra</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="sphere" title="Esfera">🔮</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="cylinder" title="Cilindro">🛢️</button>
+            <button class="add-shape-btn text-xl font-bold text-white bg-[#0A1420] rounded hover:bg-[#FF8C00] hover:text-black p-2 transition border border-[#2a3a4e]" data-shape="cone" title="Cono">🍦</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CAPA 5: BARRA INFERIOR - GESTIÓN DE PÁGINAS -->
+    <!-- ========================================== -->
+    <div class="bg-[#1A2436] border-t border-[#2a3a4e] px-4 py-2 shadow-lg z-30">
+        <div class="flex items-center gap-2 overflow-x-auto pages-scrollbar pb-1">
+            <div id="pages-list-horizontal" class="flex gap-2 items-center"></div>
+            <button id="new-page-bottom" class="bg-[#FF8C00] text-[#0A1420] rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#e07e00] transition font-bold"><i class="fas fa-plus text-sm"></i></button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- CAPA 6: MODALES - CALCULADORA Y COMPARTIR -->
+    <!-- ========================================== -->
+    <div id="modal-calc" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-[#1A2436] rounded-xl shadow-2xl p-6 w-96 border border-[#2a3a4e]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-white"><i class="fas fa-calculator mr-2 text-[#FF8C00]"></i>Calculadora</h3>
+                <button id="close-calc" class="text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+            <input type="text" id="calc-input" class="border border-[#2a3a4e] w-full p-3 text-right text-2xl font-mono rounded-lg mb-4 bg-[#0A1420] text-white" readonly placeholder="0">
+            <div class="grid grid-cols-4 gap-2">
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="7">7</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="8">8</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="9">9</button>
+                <button class="calc-btn bg-[#2a3a4e] text-[#FF8C00] p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="/">÷</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="4">4</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="5">5</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="6">6</button>
+                <button class="calc-btn bg-[#2a3a4e] text-[#FF8C00] p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="*">×</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="1">1</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="2">2</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="3">3</button>
+                <button class="calc-btn bg-[#2a3a4e] text-[#FF8C00] p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="-">-</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="0">0</button>
+                <button class="calc-btn bg-[#0A1420] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val=".">.</button>
+                <button id="calc-percent" class="bg-[#2a3a4e] text-white p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold">%</button>
+                <button class="calc-btn bg-[#2a3a4e] text-[#FF8C00] p-3 rounded-lg hover:bg-[#FF8C00] hover:text-black font-bold" data-val="+">+</button>
+                <button id="calc-clear" class="col-span-2 bg-red-900 text-red-100 p-3 rounded-lg hover:bg-red-600 hover:text-white font-bold">C (Borrar)</button>
+                <button id="calc-equal" class="col-span-2 bg-[#FF8C00] text-black p-3 rounded-lg hover:bg-[#e07e00] font-bold text-xl">=</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-share" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-[#1A2436] rounded-xl shadow-2xl p-6 w-96 border border-[#2a3a4e]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-white"><i class="fas fa-users mr-2 text-[#FF8C00]"></i>Compartir Pizarra</h3>
+                <button id="close-share" class="text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="mb-4">
+                <label class="text-xs text-gray-400 uppercase tracking-wider">Código de Sala Privada</label>
+                <div class="flex gap-2 mt-1">
+                    <input type="text" id="share-code" value="PIZ-84X-92M" class="flex-1 bg-[#0A1420] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest" readonly>
+                    <button id="copy-share-btn" class="bg-[#FF8C00] text-black px-4 rounded-lg hover:bg-[#e07e00] font-bold" data-tooltip="Copiar Código"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+            <div class="border-t border-[#2a3a4e] pt-4">
+                <h4 class="text-sm text-[#FF8C00] font-bold mb-2"><i class="fas fa-bell mr-1"></i> Peticiones de Acceso</h4>
+                <div class="bg-[#0A1420] border border-[#2a3a4e] rounded-lg p-3 text-center text-sm text-gray-500 italic">
+                    Esperando participantes... Las solicitudes de autorización aparecerán aquí para que usted las apruebe.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ========================================== -->
+    <!-- CAPA 7: TOAST DE NOTIFICACIONES -->
+    <!-- ========================================== -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-[#1A2436] text-white px-5 py-3 rounded-xl shadow-2xl hidden z-50 text-sm font-medium flex items-center gap-3 border border-[#2a3a4e]"><i class="fas fa-info-circle text-[#FF8C00]"></i><span id="toast-msg"></span></div>
+
+    <!-- ========================================== -->
+    <!-- CAPA 8: LÓGICA PRINCIPAL - JAVASCRIPT -->
+    <!-- ========================================== -->
+    <script>
+        (function(){
+            // ==========================================
+            // CAPA 8.1: CONSTRUCTOR - PROPIEDADES INICIALES
+            // ==========================================
+            class PizarraProPlus {
+                constructor() {
+                    this.container = document.getElementById('canvas-container');
+                    this.canvas = new fabric.Canvas('canvas', { selection: true, preserveObjectStacking: true, enableRetinaScaling: false });
+                    this.pages = []; this.currentPageId = null; this.historyStack = []; this.historyIndex = -1;
+                    this.isPanning = false; this.panStart = { x: 0, y: 0 };
+                    
+                    this.brushConfig = { width: 5, color: '#000000' }; 
+                    this.highlighterConfig = { width: 25, color: 'rgba(255, 235, 59, 0.4)' };
+                    
+                    this.currentTool = 'draw'; 
+                    this.clipboardObjects = null;
+
+                    // CAPA 8.1.1: ESTADO DE LA BARRA FLOTANTE
+                    this.toolbarCollapsed = false;
+                    this.toolbarAutoCollapseTimer = null;
+                    this.toolbarDragInfo = null;
+                    this.toolbarPos = { left: null, top: null };
+                    this.toolbarEl = null;
+                    this.miniToolbarBtn = null;
+                    
+                    this.init();
+                }
+
+                // ==========================================
+                // CAPA 8.2: INICIALIZACIÓN PRINCIPAL
+                // ==========================================
+                init() {
+                    this.setupCanvas(); 
+                    this.setupEventListeners(); 
+                    this.setupResizableViewer();
+                    this.setupPasteFromClipboard(); 
+                    this.setupWebNavigation(); 
+                    this.setupCalculator();
+                    this.setupFileAttacher(); 
+                    this.setupOfflineMode();
+                    
+                    this.loadFromLocalStorage(); 
+                    setTimeout(() => {
+                        this.centerCanvasView();
+                        this.setTool('draw');
+                        // Inicializar la barra flotante después de que todo esté renderizado
+                        this.setupFloatingToolbar();
+                    }, 100);
+                }
+
+                // ==========================================
+                // CAPA 8.3: MODO OFFLINE
+                // ==========================================
+                setupOfflineMode() {
+                    window.addEventListener('offline', () => this.showToast('Estás sin conexión. La pizarra sigue funcionando localmente.'));
+                    window.addEventListener('online', () => this.showToast('Conexión a Internet restaurada.'));
+                }
+
+                // ==========================================
+                // CAPA 8.4: CONFIGURACIÓN DEL LIENZO (CANVAS)
+                // ==========================================
+                setupCanvas() {
+                    this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+                    
+                    this.canvas.on('selection:created', (e) => { this.handleSelection(e); this.showContextMenu(e.selected[0]); });
+                    this.canvas.on('selection:updated', (e) => { this.handleSelection(e); this.showContextMenu(e.selected[0]); });
+                    this.canvas.on('selection:cleared', () => { this.hideContextMenu(); });
+                    
+                    this.canvas.on('object:moving', () => { this.hideContextMenu(); });
+                    this.canvas.on('object:scaling', () => { this.hideContextMenu(); });
+                    this.canvas.on('object:rotating', () => { this.hideContextMenu(); });
+                    
+                    this.canvas.on('mouse:down', (e) => this.onMouseDown(e));
+                    this.canvas.on('mouse:move', (e) => this.onMouseMove(e));
+                    this.canvas.on('mouse:up', () => this.onMouseUp());
+                    
+                    this.canvas.on('object:added', () => this.saveStateToHistory());
+                    this.canvas.on('object:modified', (e) => {
+                        this.saveStateToHistory();
+                        if(this.canvas.getActiveObject()) this.showContextMenu(this.canvas.getActiveObject());
+                    });
+                }
+
+                // ==========================================
+                // CAPA 8.5: MENÚ CONTEXTUAL (CLIC DERECHO)
+                // ==========================================
+                showContextMenu(obj) {
+                    const menu = document.getElementById('context-menu');
+                    if (!obj) { this.hideContextMenu(); return; }
+                    
+                    const isGroup = obj.type === 'group';
+                    const isSelection = obj.type === 'activeSelection';
+                    const isText = (obj.type === 'i-text' || obj.type === 'textbox' || obj.isNote);
+                    const isShape = (!isGroup && !isSelection && !isText && obj.type !== 'image');
+                    
+                    document.getElementById('ctx-group').style.display = isSelection ? 'flex' : 'none';
+                    document.getElementById('ctx-ungroup').style.display = isGroup ? 'flex' : 'none';
+                    document.getElementById('ctx-add-text').style.display = (!isSelection && !isGroup && !isText) ? 'flex' : 'none';
+                    
+                    document.getElementById('ctx-shape-sep').style.display = isShape ? 'block' : 'none';
+                    document.getElementById('ctx-fill-label').style.display = isShape ? 'flex' : 'none';
+
+                    if (isShape) {
+                        let isFilled = false;
+                        if (obj.fill && obj.fill !== 'transparent' && obj.fill !== '') {
+                            isFilled = true;
+                        }
+                        document.getElementById('ctx-fill-cb').checked = isFilled;
+                        
+                        let objColor = this.brushConfig.color;
+                        if (obj.stroke && obj.stroke !== 'transparent') objColor = obj.stroke;
+                        else if (obj.fill && typeof obj.fill === 'string' && obj.fill !== 'transparent') objColor = obj.fill;
+                    }
+
+                    document.getElementById('ctx-sep').style.display = (isSelection || isGroup || (!isSelection && !isText) || isShape) ? 'block' : 'none';
+
+                    setTimeout(() => {
+                        const rect = obj.getBoundingRect();
+                        menu.style.top = `${Math.max(10, rect.top - 55)}px`;
+                        menu.style.left = `${Math.max(10, rect.left + (rect.width / 2) - (isShape ? 120 : 80))}px`;
+                        menu.classList.remove('hidden');
+                    }, 10);
+                }
+
+                hideContextMenu() {
+                    document.getElementById('context-menu').classList.add('hidden');
+                }
+
+                // ==========================================
+                // CAPA 8.6: MANEJO DE SELECCIÓN Y COLORES
+                // ==========================================
+                handleSelection(e) {
+                    const obj = e.selected ? e.selected[0] : null;
+                    if (!obj) return;
+                    
+                    if (obj.type === 'i-text' || obj.type === 'textbox' || obj.isNote) {
+                        document.getElementById('font-family-select').value = obj.fontFamily || 'Arial';
+                        document.getElementById('font-size-select').value = obj.fontSize || 16;
+                        document.getElementById('text-bold-btn').classList.toggle('text-[#FF8C00]', obj.fontWeight === 'bold');
+                        document.getElementById('text-italic-btn').classList.toggle('text-[#FF8C00]', obj.fontStyle === 'italic');
+                        document.getElementById('text-color-btn').value = obj.fill || '#000000';
+                        let bg = obj.backgroundColor || '#000000';
+                        if(bg.startsWith('rgba') || bg === '') bg = '#000000';
+                        document.getElementById('text-bg-btn').value = bg;
+                    } else {
+                        let isFilled = false;
+                        if (obj.fill && obj.fill !== 'transparent' && obj.fill !== '') {
+                            isFilled = true;
+                            if (typeof obj.fill === 'string' && !obj.fill.startsWith('url')) {
+                                document.getElementById('text-bg-btn').value = obj.fill;
+                            }
+                        }
+                        if (obj.stroke && obj.stroke !== 'transparent') {
+                            document.getElementById('brush-color').value = obj.stroke;
+                            this.brushConfig.color = obj.stroke;
+                        }
+                        document.querySelectorAll('.fill-shape-cb').forEach(cb => cb.checked = isFilled);
+                    }
+                }
+
+                updateShapeColors(obj) {
+                    if (!obj || obj.type === 'i-text' || obj.type === 'textbox' || obj.type === 'image' || obj.isNote) return;
+
+                    const isFilled = document.querySelector('.fill-shape-cb') && document.querySelector('.fill-shape-cb').checked;
+                    const strokeColor = document.getElementById('brush-color').value;
+                    const bgColor = strokeColor; 
+
+                    const fillColor = isFilled ? bgColor : 'transparent';
+                    const shapeStroke = isFilled ? 'transparent' : strokeColor;
+                    const shapeStrokeWidth = isFilled ? 0 : 3;
+
+                    if (obj.type === 'group') {
+                        obj.forEachObject(child => {
+                            if (child.type === 'line') child.set({ stroke: strokeColor });
+                            else if (child.type === 'triangle') child.set({ fill: strokeColor });
+                            else child.set({ fill: fillColor, stroke: shapeStroke, strokeWidth: shapeStrokeWidth });
+                        });
+                    } else if (obj.type === 'line' || (obj.type === 'path' && !obj.closed && !obj.fill)) {
+                        obj.set({ stroke: strokeColor });
+                    } else if (obj.type === 'circle' && obj.fill && obj.fill.type === 'radial') {
+                        const baseColor = isFilled ? bgColor : strokeColor;
+                        obj.set('fill', new fabric.Gradient({
+                            type: 'radial',
+                            coords: { r1: 0, r2: 50, x1: 20, y1: 20, x2: 50, y2: 50 },
+                            colorStops: [{ offset: 0, color: '#ffffff' }, { offset: 1, color: baseColor }]
+                        }));
+                    } else {
+                        obj.set({ fill: fillColor, stroke: shapeStroke, strokeWidth: shapeStrokeWidth });
+                    }
+                }
+
+                // ==========================================
+                // CAPA 8.7: NAVEGACIÓN Y POSICIONAMIENTO DEL LIENZO
+                // ==========================================
+                getVisibleCenter() {
+                    return { x: this.container.scrollLeft + this.container.clientWidth / 2, y: this.container.scrollTop + this.container.clientHeight / 2 };
+                }
+
+                centerCanvasView() {
+                    this.container.scrollLeft = Math.max(0, (this.canvas.getWidth() - this.container.clientWidth) / 2);
+                    this.container.scrollTop = Math.max(0, (this.canvas.getHeight() - this.container.clientHeight) / 2);
+                }
+
+                // ==========================================
+                // CAPA 8.8: GESTIÓN DE HERRAMIENTAS DE DIBUJO
+                // ==========================================
+                updateBrushFromConfig() {
+                    if (this.currentTool === 'draw') { 
+                        this.canvas.freeDrawingBrush.width = this.brushConfig.width; 
+                        this.canvas.freeDrawingBrush.color = this.brushConfig.color; 
+                    }
+                    else if (this.currentTool === 'highlighter') { 
+                        this.canvas.freeDrawingBrush.width = this.highlighterConfig.width; 
+                        this.canvas.freeDrawingBrush.color = this.highlighterConfig.color; 
+                    }
+                    else if (this.currentTool === 'eraser') { 
+                        this.canvas.freeDrawingBrush.width = 30; 
+                        this.canvas.freeDrawingBrush.color = this.canvas.backgroundColor || '#F8F9FA'; 
+                    }
+                }
+
+                setTool(tool) {
+                    this.currentTool = tool;
+                    this.canvas.isDrawingMode = ['draw', 'highlighter', 'eraser'].includes(tool);
+                    this.canvas.selection = (tool === 'select'); 
+                    this.isPanning = (tool === 'pan');
+                    
+                    if (this.canvas.isDrawingMode) { 
+                        this.updateBrushFromConfig(); 
+                        this.canvas.freeDrawingCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"%23FF8C00\"><path d=\"M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 5.63l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a1 1 0 0 0 0-1.41z\"/></svg>') 0 24, auto";
+                    } 
+                    else { 
+                        this.canvas.defaultCursor = this.isPanning ? 'grab' : 'default'; 
+                    }
+                    
+                    document.querySelectorAll('.quick-tool-horizontal').forEach(btn => btn.classList.remove('tool-active'));
+                    
+                    const activeBtn = document.getElementById(`${tool}-btn-float`);
+                    if (activeBtn) activeBtn.classList.add('tool-active');
+
+                    // CAPA 8.8.1: AUTO-COLAPSO DE LA BARRA FLOTANTE AL SELECCIONAR HERRAMIENTA
+                    if (!this.toolbarCollapsed && this.toolbarEl) {
+                        this.startToolbarAutoCollapse();
+                    }
+                }
+
+                // ==========================================
+                // CAPA 8.9: EVENTOS DE PANNING (ARRASTRAR LIENZO)
+                // ==========================================
+                onMouseDown(e) { if (this.isPanning) this.panStart = { x: e.e.clientX, y: e.e.clientY }; }
+                onMouseMove(e) {
+                    if (this.isPanning && e.e.buttons === 1) {
+                        this.container.scrollLeft -= (e.e.clientX - this.panStart.x);
+                        this.container.scrollTop -= (e.e.clientY - this.panStart.y);
+                        this.panStart = { x: e.e.clientX, y: e.e.clientY };
+                    }
+                }
+                onMouseUp() { if (this.isPanning) this.canvas.defaultCursor = 'grab'; }
+
+                // ==========================================
+                // CAPA 8.10: CREACIÓN DE FORMAS Y OBJETOS
+                // ==========================================
+                addShape(type) {
+                    const center = this.getVisibleCenter();
+                    let obj;
+                    
+                    const strokeColor = this.brushConfig.color;
+                    const fontFamily = document.getElementById('font-family-select').value;
+                    const fontSize = parseInt(document.getElementById('font-size-select').value);
+                    
+                    const isFilled = document.querySelector('.fill-shape-cb') && document.querySelector('.fill-shape-cb').checked;
+                    const bgColor = strokeColor; 
+                    
+                    const fillColor = isFilled ? bgColor : 'transparent';
+                    const shapeStroke = isFilled ? 'transparent' : strokeColor;
+                    const shapeStrokeWidth = isFilled ? 0 : 3;
+                    
+                    const commonOpts = { fill: fillColor, stroke: shapeStroke, strokeWidth: shapeStrokeWidth, originX: 'center', originY: 'center', left: center.x, top: center.y };
+
+                    const createPolygon = (sides, radius) => {
+                        const points = [];
+                        const angle = (Math.PI * 2) / sides;
+                        for (let i = 0; i < sides; i++) points.push({ x: radius * Math.sin(i * angle), y: -radius * Math.cos(i * angle) });
+                        return new fabric.Polygon(points, commonOpts);
+                    };
+
+                    switch(type) {
+                        case 'rect': case 'square': obj = new fabric.Rect({ ...commonOpts, width: 100, height: 100 }); break;
+                        case 'circle': obj = new fabric.Circle({ ...commonOpts, radius: 50 }); break;
+                        case 'line': obj = new fabric.Line([center.x-100, center.y, center.x+100, center.y], { stroke: strokeColor, strokeWidth: 4 }); break;
+                        case 'text': obj = new fabric.IText('Doble clic para editar', { left: center.x-80, top: center.y-15, fontSize: fontSize, fontFamily: fontFamily, fill: strokeColor }); break;
+                        
+                        case 'line-v': obj = new fabric.Line([center.x, center.y-80, center.x, center.y+80], { stroke: strokeColor, strokeWidth: 4 }); break;
+                        case 'line-h': obj = new fabric.Line([center.x-80, center.y, center.x+80, center.y], { stroke: strokeColor, strokeWidth: 4 }); break;
+                        case 'line-diagonal': obj = new fabric.Line([center.x-50, center.y-50, center.x+50, center.y+50], { stroke: strokeColor, strokeWidth: 4 }); break;
+                        case 'line-dashed': obj = new fabric.Line([center.x-100, center.y, center.x+100, center.y], { stroke: strokeColor, strokeWidth: 4, strokeDashArray: [10, 5] }); break;
+                        case 'curve': obj = new fabric.Path('M 0 50 Q 50 -50 100 50', { fill: '', stroke: strokeColor, strokeWidth: 4, left: center.x-50, top: center.y-25 }); break;
+                        
+                        case 'arrow-1': 
+                            const lRight = new fabric.Line([-50, 0, 50, 0], { stroke: strokeColor, strokeWidth: 4 });
+                            const hRight = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 50, top: 0, originX: 'center', originY: 'center', angle: 90 });
+                            obj = new fabric.Group([lRight, hRight], { left: center.x, top: center.y });
+                            break;
+                        case 'arrow-left': 
+                            const lLeft = new fabric.Line([-50, 0, 50, 0], { stroke: strokeColor, strokeWidth: 4 });
+                            const hLeft = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: -50, top: 0, originX: 'center', originY: 'center', angle: -90 });
+                            obj = new fabric.Group([lLeft, hLeft], { left: center.x, top: center.y });
+                            break;
+                        case 'arrow-up': 
+                            const lUp = new fabric.Line([0, -50, 0, 50], { stroke: strokeColor, strokeWidth: 4 });
+                            const hUp = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 0, top: -50, originX: 'center', originY: 'center', angle: 0 });
+                            obj = new fabric.Group([lUp, hUp], { left: center.x, top: center.y });
+                            break;
+                        case 'arrow-down': 
+                            const lDown = new fabric.Line([0, -50, 0, 50], { stroke: strokeColor, strokeWidth: 4 });
+                            const hDown = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 0, top: 50, originX: 'center', originY: 'center', angle: 180 });
+                            obj = new fabric.Group([lDown, hDown], { left: center.x, top: center.y });
+                            break;
+                        case 'arrow-2': 
+                            const lH = new fabric.Line([-50, 0, 50, 0], { stroke: strokeColor, strokeWidth: 4 });
+                            const hH1 = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 50, top: 0, originX: 'center', originY: 'center', angle: 90 });
+                            const hH2 = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: -50, top: 0, originX: 'center', originY: 'center', angle: -90 });
+                            obj = new fabric.Group([lH, hH1, hH2], { left: center.x, top: center.y });
+                            break;
+                        case 'arrow-v-double': 
+                            const lV = new fabric.Line([0, -50, 0, 50], { stroke: strokeColor, strokeWidth: 4 });
+                            const hV1 = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 0, top: -50, originX: 'center', originY: 'center', angle: 0 });
+                            const hV2 = new fabric.Triangle({ width: 15, height: 15, fill: strokeColor, left: 0, top: 50, originX: 'center', originY: 'center', angle: 180 });
+                            obj = new fabric.Group([lV, hV1, hV2], { left: center.x, top: center.y });
+                            break;
+
+                        case 'rectangle': obj = new fabric.Rect({ ...commonOpts, width: 160, height: 80 }); break;
+                        case 'rhombus': obj = new fabric.Polygon([{x:50,y:0},{x:100,y:50},{x:50,y:100},{x:0,y:50}], commonOpts); break;
+                        case 'trapezoid': obj = new fabric.Polygon([{x:20,y:0},{x:80,y:0},{x:100,y:60},{x:0,y:60}], commonOpts); break;
+                        case 'parallelogram': obj = new fabric.Polygon([{x:20,y:0},{x:120,y:0},{x:100,y:60},{x:0,y:60}], commonOpts); break;
+                        case 'tri-equilateral': obj = new fabric.Triangle({ ...commonOpts, width: 100, height: 86.6 }); break;
+                        case 'tri-isosceles': obj = new fabric.Triangle({ ...commonOpts, width: 60, height: 100 }); break;
+                        case 'tri-scalene': obj = new fabric.Polygon([{x:0,y:100},{x:80,y:100},{x:30,y:0}], commonOpts); break;
+                        case 'pentagon': obj = createPolygon(5, 60); break;
+                        case 'hexagon': obj = createPolygon(6, 60); break;
+                        case 'heptagon': obj = createPolygon(7, 60); break;
+                        case 'octagon': obj = createPolygon(8, 60); break;
+                        case 'nonagon': obj = createPolygon(9, 60); break;
+                        case 'ellipse': obj = new fabric.Ellipse({ ...commonOpts, rx: 70, ry: 40 }); break;
+                        case 'star':
+                            const starPoints = [];
+                            const outerR = 50, innerR = 20;
+                            for (let i = 0; i < 10; i++) {
+                                let r = i % 2 === 0 ? outerR : innerR;
+                                let angle = (Math.PI * 2 * i) / 10 - Math.PI / 2;
+                                starPoints.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
+                            }
+                            obj = new fabric.Polygon(starPoints, commonOpts); 
+                            break;
+
+                        case 'cube': obj = new fabric.Path('M 0 30 L 40 10 L 80 30 L 80 70 L 40 90 L 0 70 Z M 0 30 L 40 50 L 80 30 M 40 50 L 40 90', { ...commonOpts }); break;
+                        case 'prism': obj = new fabric.Path('M 0 30 L 40 10 L 80 30 L 80 70 L 40 90 L 0 70 Z M 0 30 L 80 30 M 40 10 L 40 90', { ...commonOpts }); break;
+                        case 'pyramid': obj = new fabric.Path('M 0 60 L 80 60 L 40 0 Z M 0 60 L 30 40 L 80 60 M 30 40 L 40 0', { ...commonOpts, left: center.x-40, top: center.y-30}); break;
+                        case 'tetrahedron': obj = new fabric.Path('M 0 60 L 80 60 L 40 0 Z M 40 0 L 50 40 L 80 60 M 0 60 L 50 40', { ...commonOpts, left: center.x-40, top: center.y-30}); break;
+                        case 'cylinder': obj = new fabric.Path('M 0 20 C 0 0, 60 0, 60 20 C 60 40, 0 40, 0 20 L 0 80 C 0 100, 60 100, 60 80 L 60 20', { ...commonOpts, left: center.x-30, top: center.y-50}); break;
+                        case 'cone': obj = new fabric.Path('M 30 0 L 0 80 C 0 100, 60 100, 60 80 Z M 0 80 C 0 60, 60 60, 60 80', { ...commonOpts, left: center.x-30, top: center.y-50 }); break;
+                        case 'sphere': 
+                            const baseColor = isFilled ? bgColor : strokeColor;
+                            obj = new fabric.Circle({ ...commonOpts, radius: 50, fill: baseColor });
+                            obj.set('fill', new fabric.Gradient({
+                                type: 'radial',
+                                coords: { r1: 0, r2: 50, x1: 20, y1: 20, x2: 50, y2: 50 },
+                                colorStops: [{ offset: 0, color: '#ffffff' }, { offset: 1, color: baseColor }]
+                            }));
+                            break;
+
+                        case 'sticky':
+                            obj = new fabric.Textbox('Doble clic para editar...', {
+                                left: center.x, top: center.y, width: 220,
+                                fontSize: fontSize, fontFamily: fontFamily, fill: '#334155',
+                                backgroundColor: '#fef08a', padding: 15,
+                                shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 5, offsetX: 3, offsetY: 3 }),
+                                originX: 'center', originY: 'center', textAlign: 'center', splitByGrapheme: true
+                            });
+                            obj.isNote = true;
+                            break;
+                    }
+                    if(obj) {
+                        this.canvas.add(obj);
+                        this.canvas.setActiveObject(obj);
+                        this.canvas.renderAll();
+                        this.setTool('select'); 
+                        this.saveStateToHistory();
+                    }
+                }
+
+                // ==========================================
+                // CAPA 8.11: OPERACIONES DE EDICIÓN (COPIAR, PEGAR, BORRAR)
+                // ==========================================
+                deleteSelection() {
+                    const activeObjects = this.canvas.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                        activeObjects.forEach(obj => this.canvas.remove(obj));
+                        this.canvas.discardActiveObject();
+                        this.canvas.renderAll();
+                        this.saveStateToHistory();
+                        this.hideContextMenu();
+                        this.showToast('Objeto(s) eliminado(s)');
+                    } else {
+                        this.showToast('Selecciona algo para borrar');
+                    }
+                }
+
+                copySelected() {
+                    const activeObject = this.canvas.getActiveObject();
+                    if (activeObject) {
+                        activeObject.clone((cloned) => {
+                            this.clipboardObjects = cloned;
+                            this.showToast('Copiado al portapapeles');
+                        });
+                    }
+                }
+
+                pasteFromInternal() {
+                    if (!this.clipboardObjects) return;
+                    this.clipboardObjects.clone((clonedObj) => {
+                        this.canvas.discardActiveObject();
+                        clonedObj.set({ left: clonedObj.left + 20, top: clonedObj.top + 20, evented: true });
+
+                        if (clonedObj.type === 'activeSelection') {
+                            clonedObj.canvas = this.canvas;
+                            clonedObj.forEachObject((obj) => { this.canvas.add(obj); });
+                            clonedObj.setCoords();
+                        } else {
+                            this.canvas.add(clonedObj);
+                        }
+
+                        this.clipboardObjects.top += 20;
+                        this.clipboardObjects.left += 20;
+
+                        this.canvas.setActiveObject(clonedObj);
+                        this.canvas.renderAll();
+                        this.saveStateToHistory();
+                    });
+                }
+
+                // ==========================================
+                // CAPA 8.12: VISOR WEB Y NAVEGACIÓN
+                // ==========================================
+                setupWebNavigation() {
+                    const webUrlInput = document.getElementById('web-url-input');
+                    const webGoBtn = document.getElementById('web-go-btn');
+                    const webIframe = document.getElementById('web-iframe');
+
+                    const navigate = () => {
+                        if (!navigator.onLine) {
+                            this.showToast('Sin conexión a Internet. La búsqueda web no está disponible.');
+                            return;
+                        }
+                        
+                        let query = webUrlInput.value.trim();
+                        if(query === '') return;
+                        if (!/^https?:\/\//i.test(query) && !query.includes('.')) {
+                            webIframe.src = 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(query);
+                        } else {
+                            if (!/^https?:\/\//i.test(query)) query = 'https://' + query;
+                            webIframe.src = query;
+                        }
+                    };
+
+                    webGoBtn.onclick = navigate;
+                    webUrlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') navigate(); });
+                }
+
+                // ==========================================
+                // CAPA 8.13: CALCULADORA MODAL
+                // ==========================================
+                setupCalculator() {
+                    const modal = document.getElementById('modal-calc');
+                    const calcInput = document.getElementById('calc-input');
+                    
+                    const evaluateMath = (expr) => {
+                        try {
+                            const safeExpr = expr.replace(/[^-()\d/*+.]/g, '');
+                            return new Function(`'use strict'; return (${safeExpr})`)();
+                        } catch(e) { return 'Error'; }
+                    };
+
+                    document.querySelectorAll('.calc-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            if(calcInput.value === 'Error') calcInput.value = '';
+                            calcInput.value += btn.getAttribute('data-val');
+                        });
+                    });
+
+                    document.getElementById('calc-clear').onclick = () => { calcInput.value = ''; };
+                    document.getElementById('calc-percent').onclick = () => { calcInput.value += '% de '; };
+                    
+                    document.getElementById('calc-equal').onclick = () => {
+                        let val = calcInput.value;
+                        if (val.includes('% de ')) {
+                            let parts = val.split('% de ');
+                            if(parts.length === 2) {
+                                let percent = parseFloat(parts[0]);
+                                let number = parseFloat(parts[1]);
+                                if(!isNaN(percent) && !isNaN(number)) {
+                                    calcInput.value = (percent / 100 * number).toString();
+                                    return;
+                                }
+                            }
+                        }
+                        calcInput.value = evaluateMath(val);
+                    };
+
+                    document.addEventListener('keydown', (e) => {
+                        if (!modal.classList.contains('hidden')) {
+                            if (e.key >= '0' && e.key <= '9') calcInput.value += e.key;
+                            if (['+', '-', '*', '/'].includes(e.key)) calcInput.value += e.key;
+                            if (e.key === 'Enter') document.getElementById('calc-equal').click();
+                            if (e.key === 'Escape') modal.classList.add('hidden');
+                            if (e.key === '.') calcInput.value += '.';
+                            if (e.key === 'Backspace') calcInput.value = calcInput.value.slice(0, -1);
+                        }
+                    });
+                }
+
+                // ==========================================
+                // CAPA 8.14: ADJUNTAR ARCHIVOS
+                // ==========================================
+                setupFileAttacher() {
+                    const fileInput = document.getElementById('main-file-input');
+                    const attachBtn = document.getElementById('attach-file-btn');
+                    
+                    attachBtn.onclick = () => { fileInput.click(); };
+
+                    fileInput.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const blobUrl = URL.createObjectURL(file);
+                        
+                        if (file.type.startsWith('image/')) {
+                            fabric.Image.fromURL(blobUrl, (img) => {
+                                const center = this.getVisibleCenter();
+                                img.scaleToWidth(400); 
+                                img.set({ left: center.x - img.getScaledWidth()/2, top: center.y - img.getScaledHeight()/2 });
+                                this.canvas.add(img);
+                                this.canvas.setActiveObject(img);
+                                this.setTool('select');
+                                this.saveStateToHistory();
+                                this.showToast('Imagen pegada en la pizarra');
+                            });
+                        } else {
+                            this.showInViewer(file, blobUrl, file.type);
+                            this.showToast('Archivo abierto en el visor');
+                        }
+                        fileInput.value = '';
+                    };
+                }
+
+                showInViewer(file, blobUrl, fileType) {
+                    const viewerDiv = document.getElementById('doc-viewer');
+                    const contentDiv = document.getElementById('viewer-content');
+                    contentDiv.innerHTML = ''; 
+
+                    if (fileType === 'application/pdf') {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = blobUrl;
+                        iframe.style.width = '100%';
+                        iframe.style.height = '100%';
+                        contentDiv.appendChild(iframe);
+                    } else {
+                        contentDiv.innerHTML = `
+                            <div class="text-center p-4">
+                                <i class="fas fa-file-alt text-5xl text-gray-400 mb-4"></i>
+                                <p class="text-white font-bold mb-2">${file.name}</p>
+                                <p class="text-gray-400 text-sm mb-4">El navegador no puede previsualizar este formato de documento nativamente. Para verlo aquí, conviértelo a PDF.</p>
+                                <a href="${blobUrl}" download="${file.name}" class="px-4 py-2 bg-[#FF8C00] text-[#0A1420] rounded-lg font-bold hover:bg-[#e07e00]">Descargar Archivo</a>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('web-viewer').classList.add('hidden'); 
+                    viewerDiv.classList.remove('hidden');
+                    
+                    const webBtn = document.getElementById('web-viewer-btn');
+                    webBtn.classList.remove('bg-[#FF8C00]', 'text-[#0A1420]', 'border-[#FF8C00]');
+                    webBtn.classList.add('bg-[#1A2436]', 'text-gray-300', 'border-[#2a3a4e]');
+                }
+
+                // ==========================================
+                // CAPA 8.15: PEGAR DESDE EL PORTAPAPELES DEL SISTEMA
+                // ==========================================
+                setupPasteFromClipboard() {
+                    document.addEventListener('paste', (e) => {
+                        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || this.canvas.getActiveObject()?.isEditing)) return;
+                        
+                        const items = (e.clipboardData || window.clipboardData).items;
+                        let hasImage = false;
+
+                        for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.indexOf('image') !== -1) {
+                                hasImage = true;
+                                const blob = items[i].getAsFile(); 
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    fabric.Image.fromURL(event.target.result, (img) => {
+                                        const center = this.getVisibleCenter(); 
+                                        if(img.width > 800) img.scaleToWidth(800);
+                                        img.set({ left: center.x - img.getScaledWidth()/2, top: center.y - img.getScaledHeight()/2 });
+                                        this.canvas.add(img); this.canvas.setActiveObject(img); this.canvas.renderAll(); this.saveStateToHistory();
+                                        this.showToast('Imagen pegada');
+                                    });
+                                }; 
+                                reader.readAsDataURL(blob); 
+                                e.preventDefault(); 
+                                break;
+                            }
+                        }
+
+                        if (!hasImage) {
+                            const textData = (e.clipboardData || window.clipboardData).getData('text');
+                            if (textData && textData.trim() !== '') {
+                                const center = this.getVisibleCenter();
+                                const fontFamilySelect = document.getElementById('font-family-select');
+                                const fontSizeSelect = document.getElementById('font-size-select');
+                                const fontFamily = fontFamilySelect ? fontFamilySelect.value : 'Arial';
+                                const fontSize = fontSizeSelect ? parseInt(fontSizeSelect.value) : 24;
+                                
+                                const textObj = new fabric.IText(textData, {
+                                    left: center.x, top: center.y,
+                                    fontFamily: fontFamily, fontSize: fontSize,
+                                    fill: this.brushConfig.color || '#000000',
+                                    originX: 'center', originY: 'center'
+                                });
+                                this.canvas.add(textObj);
+                                this.canvas.setActiveObject(textObj);
+                                this.canvas.renderAll();
+                                this.saveStateToHistory();
+                                this.showToast('Texto pegado');
+                                e.preventDefault();
+                            }
+                        }
+                    });
+                }
+
+                // ==========================================
+                // CAPA 8.16: VISOR REDIMENSIONABLE
+                // ==========================================
+                setupResizableViewer() {
+                    const docViewer = document.getElementById('doc-viewer'), webViewer = document.getElementById('web-viewer'), handle = document.getElementById('resize-handle');
+                    let startX, startWidth, activeViewer = null;
+                    handle.addEventListener('mousedown', (e) => {
+                        if (!docViewer.classList.contains('hidden')) activeViewer = docViewer; else if (!webViewer.classList.contains('hidden')) activeViewer = webViewer; else return;
+                        startX = e.clientX; startWidth = activeViewer.offsetWidth; document.body.style.cursor = 'ew-resize';
+                        const onMouseMove = (me) => { activeViewer.style.width = Math.min(Math.max(startWidth + (startX - me.clientX), 280), window.innerWidth * 0.8) + 'px'; };
+                        const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); document.body.style.cursor = ''; activeViewer = null; };
+                        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp); e.preventDefault();
+                    });
+                }
+
+                // ==========================================
+                // CAPA 8.17: NOTIFICACIONES TOAST
+                // ==========================================
+                showToast(msg) { const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = msg; toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 3000); }
+
+                // ==========================================
+                // CAPA 8.18: HISTORIAL (UNDO / REDO)
+                // ==========================================
+                saveStateToHistory() {
+                    if (this.canvas.isEmpty() && this.historyStack.length === 0) return;
+                    const json = JSON.stringify(this.canvas.toJSON(['isNote']));
+                    if (this.historyIndex < this.historyStack.length - 1) this.historyStack = this.historyStack.slice(0, this.historyIndex + 1);
+                    this.historyStack.push(json); this.historyIndex++;
+                    if (this.historyStack.length > 30) { this.historyStack.shift(); this.historyIndex--; }
+                }
+                undo() { if (this.historyIndex > 0) { this.historyIndex--; this.canvas.loadFromJSON(this.historyStack[this.historyIndex], () => { this.canvas.renderAll(); this.hideContextMenu(); }); } }
+                redo() { if (this.historyIndex < this.historyStack.length - 1) { this.historyIndex++; this.canvas.loadFromJSON(this.historyStack[this.historyIndex], () => { this.canvas.renderAll(); this.hideContextMenu(); }); } }
+
+                // ==========================================
+                // CAPA 8.19: GESTIÓN DE PÁGINAS Y ALMACENAMIENTO LOCAL
+                // ==========================================
+                saveCurrentPage() { const page = this.pages.find(p => p.id === this.currentPageId); if (page) { page.json = JSON.stringify(this.canvas.toJSON(['isNote'])); this.saveToLocalStorage(); } }
+                loadPage(id) { this.saveCurrentPage(); const page = this.pages.find(p => p.id === id); if (page) { this.currentPageId = id; this.canvas.loadFromJSON(page.json, () => { this.canvas.renderAll(); this.renderPagesHorizontal(); this.hideContextMenu(); }); } }
+                createPage() { const newId = Date.now(); this.pages.push({ id: newId, name: `Pág ${this.pages.length + 1}`, json: JSON.stringify({ objects: [], background: '#F8F9FA' }) }); this.currentPageId = newId; this.canvas.clear(); this.canvas.backgroundColor = '#F8F9FA'; this.renderPagesHorizontal(); this.hideContextMenu(); }
+                renderPagesHorizontal() {
+                    const container = document.getElementById('pages-list-horizontal'); container.innerHTML = '';
+                    this.pages.forEach(page => {
+                        const btn = document.createElement('button'); btn.textContent = page.name;
+                        btn.className = `px-3 py-1.5 rounded-lg text-sm transition page-tab ${this.currentPageId === page.id ? 'active' : ''}`;
+                        btn.onclick = () => this.loadPage(page.id); container.appendChild(btn);
+                    });
+                }
+                saveToLocalStorage() { try { localStorage.setItem('pizarra_pro_pages', JSON.stringify(this.pages)); localStorage.setItem('pizarra_pro_current', this.currentPageId); } catch(e) {} }
+                loadFromLocalStorage() { const stored = localStorage.getItem('pizarra_pro_pages'); if (stored) { this.pages = JSON.parse(stored); this.currentPageId = parseInt(localStorage.getItem('pizarra_pro_current')) || this.pages[0]?.id; this.loadPage(this.currentPageId); } else this.createPage(); }
+
+                // ==========================================
+                // CAPA 8.20: BARRA FLOTANTE - DRAG, MINIMIZAR Y AUTO-COLAPSO
+                // ==========================================
+                setupFloatingToolbar() {
+                    const toolbar = document.getElementById('floating-toolbar');
+                    const miniBtn = document.getElementById('mini-toolbar-btn');
+                    const dragHandle = document.getElementById('toolbar-drag-handle');
+                    const minimizeBtn = document.getElementById('toolbar-minimize-btn');
+                    const mainArea = document.getElementById('main-area'); // contenedor relativo
+
+                    // Guardar referencias en la instancia
+                    this.toolbarEl = toolbar;
+                    this.miniToolbarBtn = miniBtn;
+
+                    // Función para obtener la posición actual de la barra relativa al contenedor principal
+                    const captureToolbarPosition = () => {
+                        const rect = toolbar.getBoundingClientRect();
+                        const areaRect = mainArea.getBoundingClientRect();
+                        this.toolbarPos = {
+                            left: rect.left - areaRect.left,
+                            top: rect.top - areaRect.top
+                        };
+                    };
+
+                    // Capturar posición inicial
+                    captureToolbarPosition();
+
+                    // Aplicar posición absoluta (eliminando el centrado CSS inicial)
+                    const applyAbsolutePosition = () => {
+                        toolbar.style.left = this.toolbarPos.left + 'px';
+                        toolbar.style.top = this.toolbarPos.top + 'px';
+                        toolbar.style.bottom = 'auto';
+                        toolbar.style.transform = 'none';
+                    };
+                    applyAbsolutePosition();
+
+                    // ==========================================
+                    // SUB-CAPA 8.20.1: DRAG (ARRASTRE) DE LA BARRA
+                    // ==========================================
+                    dragHandle.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Cancelar auto-colapso mientras se arrastra
+                        this.cancelToolbarAutoCollapse();
+                        
+                        captureToolbarPosition();
+                        this.toolbarDragInfo = {
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            origLeft: this.toolbarPos.left,
+                            origTop: this.toolbarPos.top
+                        };
+                        toolbar.classList.add('dragging');
+                        
+                        const onDragMove = (moveEvent) => {
+                            if (!this.toolbarDragInfo) return;
+                            const dx = moveEvent.clientX - this.toolbarDragInfo.startX;
+                            const dy = moveEvent.clientY - this.toolbarDragInfo.startY;
+                            const areaRect = mainArea.getBoundingClientRect();
+                            // Calcular límites para que no se salga del área visible
+                            const maxLeft = areaRect.width - toolbar.offsetWidth;
+                            const maxTop = areaRect.height - toolbar.offsetHeight;
+                            const newLeft = Math.max(0, Math.min(this.toolbarDragInfo.origLeft + dx, maxLeft));
+                            const newTop = Math.max(0, Math.min(this.toolbarDragInfo.origTop + dy, maxTop));
+                            toolbar.style.left = newLeft + 'px';
+                            toolbar.style.top = newTop + 'px';
+                        };
+
+                        const onDragEnd = () => {
+                            document.removeEventListener('mousemove', onDragMove);
+                            document.removeEventListener('mouseup', onDragEnd);
+                            toolbar.classList.remove('dragging');
+                            if (this.toolbarDragInfo) {
+                                this.toolbarPos.left = parseFloat(toolbar.style.left);
+                                this.toolbarPos.top = parseFloat(toolbar.style.top);
+                                this.toolbarDragInfo = null;
+                            }
+                            // Sincronizar posición del mini botón
+                            this.updateMiniBtnPosition();
+                            // Reiniciar timer de auto-colapso
+                            if (!this.toolbarCollapsed) {
+                                this.startToolbarAutoCollapse();
+                            }
+                        };
+
+                        document.addEventListener('mousemove', onDragMove);
+                        document.addEventListener('mouseup', onDragEnd);
+                    });
+
+                    // ==========================================
+                    // SUB-CAPA 8.20.2: MINIMIZAR Y EXPANDIR
+                    // ==========================================
+                    minimizeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.collapseToolbar();
+                    });
+
+                    miniBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.expandToolbar();
+                    });
+
+                    // ==========================================
+                    // SUB-CAPA 8.20.3: HOVER - GESTIÓN DEL AUTO-COLAPSO
+                    // ==========================================
+                    toolbar.addEventListener('mouseenter', () => {
+                        // Si el mouse entra en la barra, cancelar el timer
+                        this.cancelToolbarAutoCollapse();
+                    });
+
+                    toolbar.addEventListener('mouseleave', () => {
+                        // Si el mouse sale de la barra y no está minimizada, iniciar timer
+                        if (!this.toolbarCollapsed) {
+                            this.startToolbarAutoCollapse();
+                        }
+                    });
+
+                    // Iniciar el timer por primera vez
+                    this.startToolbarAutoCollapse();
+                }
+
+                /**
+                 * Minimiza la barra flotante y muestra el botón flotante compacto
+                 */
+                collapseToolbar() {
+                    if (this.toolbarCollapsed) return;
+                    this.toolbarCollapsed = true;
+                    this.cancelToolbarAutoCollapse();
+                    // Guardar posición actual antes de ocultar
+                    const toolbar = this.toolbarEl;
+                    if (toolbar.style.left && toolbar.style.top) {
+                        this.toolbarPos.left = parseFloat(toolbar.style.left);
+                        this.toolbarPos.top = parseFloat(toolbar.style.top);
+                    }
+                    toolbar.classList.add('hidden');
+                    this.updateMiniBtnPosition();
+                    this.miniToolbarBtn.classList.remove('hidden');
+                }
+
+                /**
+                 * Expande la barra flotante desde el botón minimizado
+                 */
+                expandToolbar() {
+                    if (!this.toolbarCollapsed) return;
+                    this.toolbarCollapsed = false;
+                    this.miniToolbarBtn.classList.add('hidden');
+                    this.toolbarEl.classList.remove('hidden');
+                    // Restaurar posición
+                    this.toolbarEl.style.left = this.toolbarPos.left + 'px';
+                    this.toolbarEl.style.top = this.toolbarPos.top + 'px';
+                    this.toolbarEl.style.bottom = 'auto';
+                    this.toolbarEl.style.transform = 'none';
+                    // Iniciar timer para auto-colapsar de nuevo
+                    this.startToolbarAutoCollapse();
+                }
+
+                /**
+                 * Sincroniza la posición del botón minimizado con la última posición de la barra
+                 */
+                updateMiniBtnPosition() {
+                    if (!this.miniToolbarBtn) return;
+                    this.miniToolbarBtn.style.left = (this.toolbarPos.left + 8) + 'px';
+                    this.miniToolbarBtn.style.top = (this.toolbarPos.top + 8) + 'px';
+                    this.miniToolbarBtn.style.bottom = 'auto';
+                    this.miniToolbarBtn.style.transform = 'none';
+                }
+
+                /**
+                 * Inicia el temporizador para minimizar automáticamente la barra tras inactividad
+                 */
+                startToolbarAutoCollapse() {
+                    this.cancelToolbarAutoCollapse();
+                    this.toolbarAutoCollapseTimer = setTimeout(() => {
+                        this.collapseToolbar();
+                    }, 2500); // 2.5 segundos de inactividad
+                }
+
+                /**
+                 * Cancela el temporizador de auto-colapso
+                 */
+                cancelToolbarAutoCollapse() {
+                    if (this.toolbarAutoCollapseTimer) {
+                        clearTimeout(this.toolbarAutoCollapseTimer);
+                        this.toolbarAutoCollapseTimer = null;
+                    }
+                }
+
+                // ==========================================
+                // CAPA 8.21: CONFIGURACIÓN DE EVENTOS GLOBALES
+                // ==========================================
+                setupEventListeners() {
+                    
+                    const dropdownToggles = ['lapiz', 'resaltador', 'fuente', 'pizarra', 'guardar', 'pro'];
+                    dropdownToggles.forEach(id => {
+                        const btn = document.getElementById(`toggle-${id}`);
+                        const drop = document.getElementById(`drop-${id}`);
+                        if(btn && drop) {
+                            btn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                dropdownToggles.forEach(otherId => {
+                                    if(otherId !== id) {
+                                        const otherDrop = document.getElementById(`drop-${otherId}`);
+                                        if(otherDrop) otherDrop.classList.add('hidden');
+                                    }
+                                });
+                                // Cerrar paneles de formas al abrir un dropdown
+                                ['lines-panel','shapes2d-panel','shapes3d-panel'].forEach(pid => {
+                                    document.getElementById(pid).classList.add('hidden');
+                                });
+                                drop.classList.toggle('hidden');
+                                
+                                // Sincronizar hacia abajo
+                                if (!drop.classList.contains('hidden')) {
+                                    if (id === 'lapiz') this.setTool('draw');
+                                    if (id === 'resaltador') this.setTool('highlighter');
+                                    if (id === 'fuente') {
+                                        document.querySelectorAll('.quick-tool-horizontal').forEach(b => b.classList.remove('tool-active'));
+                                        const textBtn = document.getElementById('text-btn-float');
+                                        if(textBtn) textBtn.classList.add('tool-active');
+                                    }
+                                }
+                            });
+                            drop.addEventListener('click', (e) => e.stopPropagation());
+                        }
+                    });
+                    document.addEventListener('click', () => {
+                        dropdownToggles.forEach(id => {
+                            const drop = document.getElementById(`drop-${id}`);
+                            if(drop) drop.classList.add('hidden');
+                        });
+                    });
+
+                    document.getElementById('ctx-copy').onclick = (e) => { e.stopPropagation(); this.copySelected(); };
+                    document.getElementById('ctx-paste').onclick = (e) => { e.stopPropagation(); this.copySelected(); setTimeout(() => this.pasteFromInternal(), 50); };
+                    document.getElementById('ctx-cut').onclick = (e) => { e.stopPropagation(); this.copySelected(); this.deleteSelection(); };
+                    document.getElementById('ctx-delete').onclick = (e) => { e.stopPropagation(); this.deleteSelection(); };
+
+                    document.getElementById('ctx-group').onclick = (e) => {
+                        e.stopPropagation();
+                        const obj = this.canvas.getActiveObject();
+                        if (obj && obj.type === 'activeSelection') {
+                            obj.toGroup();
+                            this.canvas.requestRenderAll();
+                            this.saveStateToHistory();
+                            this.hideContextMenu();
+                        }
+                    };
+
+                    document.getElementById('ctx-ungroup').onclick = (e) => {
+                        e.stopPropagation();
+                        const obj = this.canvas.getActiveObject();
+                        if (obj && obj.type === 'group') {
+                            obj.toActiveSelection();
+                            this.canvas.requestRenderAll();
+                            this.saveStateToHistory();
+                            this.hideContextMenu();
+                        }
+                    };
+
+                    document.getElementById('ctx-add-text').onclick = (e) => {
+                        e.stopPropagation();
+                        const obj = this.canvas.getActiveObject();
+                        if (obj) {
+                            const center = obj.getCenterPoint();
+                            const fontSize = parseInt(document.getElementById('font-size-select').value) || 24;
+                            const fontFamily = document.getElementById('font-family-select').value || 'Arial';
+                            const textColor = document.getElementById('text-color-btn').value || '#000000';
+                            
+                            const text = new fabric.IText('Texto Inicial', {
+                                left: center.x, top: center.y,
+                                originX: 'center', originY: 'center',
+                                fontSize: fontSize, fontFamily: fontFamily, fill: textColor
+                            });
+                            
+                            this.canvas.add(text);
+                            this.canvas.setActiveObject(text);
+                            text.enterEditing();
+                            text.selectAll();
+                            
+                            this.canvas.requestRenderAll();
+                            this.saveStateToHistory();
+                            this.hideContextMenu();
+                        }
+                    };
+
+                    document.getElementById('ctx-fill-cb').onchange = (e) => {
+                        const isChecked = e.target.checked;
+                        document.querySelectorAll('.fill-shape-cb').forEach(c => c.checked = isChecked);
+                        const active = this.canvas.getActiveObject();
+                        if (active) {
+                            this.updateShapeColors(active);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    const panels = ['lines-panel', 'shapes2d-panel', 'shapes3d-panel'];
+                    const togglePanel = (targetId) => {
+                        panels.forEach(id => {
+                            if(id !== targetId) document.getElementById(id).classList.add('hidden');
+                        });
+                        // Cerrar todos los dropdowns al abrir un panel
+                        ['lapiz','resaltador','fuente','pizarra','guardar','pro'].forEach(id => {
+                            const d = document.getElementById('drop-'+id);
+                            if(d) d.classList.add('hidden');
+                        });
+                        document.getElementById(targetId).classList.toggle('hidden');
+                    };
+
+                    document.querySelectorAll('.fill-shape-cb').forEach(cb => {
+                        cb.onchange = (e) => {
+                            const isChecked = e.target.checked;
+                            document.querySelectorAll('.fill-shape-cb').forEach(c => c.checked = isChecked);
+                            const active = this.canvas.getActiveObject();
+                            if (active) {
+                                this.updateShapeColors(active);
+                                this.canvas.renderAll();
+                                this.saveStateToHistory();
+                            }
+                        };
+                    });
+
+                    const updateTextProp = (prop, val) => {
+                        const active = this.canvas.getActiveObject();
+                        if (active && (active.type === 'i-text' || active.type === 'textbox' || active.isNote)) {
+                            active.set(prop, val);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    document.getElementById('font-family-select').onchange = (e) => updateTextProp('fontFamily', e.target.value);
+                    document.getElementById('font-size-select').onchange = (e) => updateTextProp('fontSize', parseInt(e.target.value));
+
+                    document.getElementById('text-bold-btn').onclick = () => {
+                        const active = this.canvas.getActiveObject();
+                        if (active && (active.type === 'i-text' || active.type === 'textbox' || active.isNote)) {
+                            const isBold = active.fontWeight === 'bold';
+                            active.set('fontWeight', isBold ? 'normal' : 'bold');
+                            document.getElementById('text-bold-btn').classList.toggle('text-[#FF8C00]', !isBold);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    document.getElementById('text-italic-btn').onclick = () => {
+                        const active = this.canvas.getActiveObject();
+                        if (active && (active.type === 'i-text' || active.type === 'textbox' || active.isNote)) {
+                            const isItalic = active.fontStyle === 'italic';
+                            active.set('fontStyle', isItalic ? 'normal' : 'italic');
+                            document.getElementById('text-italic-btn').classList.toggle('text-[#FF8C00]', !isItalic);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    document.getElementById('text-case-btn').onclick = () => {
+                        const active = this.canvas.getActiveObject();
+                        if (active && active.text) {
+                            const txt = active.text;
+                            const isUpper = txt === txt.toUpperCase();
+                            active.set('text', isUpper ? txt.toLowerCase() : txt.toUpperCase());
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    document.getElementById('text-color-btn').onchange = (e) => updateTextProp('fill', e.target.value);
+                    
+                    document.getElementById('text-bg-btn').onchange = (e) => {
+                        updateTextProp('backgroundColor', e.target.value);
+                        const active = this.canvas.getActiveObject();
+                        if (active && active.type !== 'i-text' && active.type !== 'textbox' && !active.isNote) {
+                            this.updateShapeColors(active);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                    };
+
+                    document.getElementById('sel-delete-btn').onclick = () => this.deleteSelection();
+                    
+                    document.addEventListener('keydown', (e) => {
+                        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || this.canvas.getActiveObject()?.isEditing)) return;
+                        
+                        if (e.key === 'Delete' || e.key === 'Backspace') {
+                            e.preventDefault();
+                            this.deleteSelection();
+                        }
+                        if (e.ctrlKey || e.metaKey) {
+                            if (e.key.toLowerCase() === 'c') {
+                                this.copySelected();
+                            } else if (e.key.toLowerCase() === 'v') {
+                                this.pasteFromInternal();
+                            } else if (e.key.toLowerCase() === 'x') {
+                                this.copySelected();
+                                this.deleteSelection();
+                            } else if (e.key.toLowerCase() === 'z') {
+                                e.preventDefault();
+                                this.undo();
+                            } else if (e.key.toLowerCase() === 'y') {
+                                e.preventDefault();
+                                this.redo();
+                            }
+                        }
+                        if (!e.ctrlKey && !e.metaKey) {
+                            if (e.key.toLowerCase() === 'v') this.setTool('select');
+                            if (e.key.toLowerCase() === 'p') this.setTool('draw');
+                            if (e.key.toLowerCase() === 'e') this.setTool('eraser');
+                            if (e.key.toLowerCase() === 't') this.addShape('text');
+                            if (e.key.toLowerCase() === 'h') this.setTool('highlighter');
+                        }
+                    });
+
+                    document.getElementById('undo-btn').onclick = () => this.undo();
+                    document.getElementById('redo-btn').onclick = () => this.redo();
+                    
+                    document.getElementById('clear-btn').onclick = () => { 
+                        let prevBg = this.canvas.backgroundColor; 
+                        this.canvas.clear(); 
+                        this.canvas.backgroundColor = prevBg || '#F8F9FA'; 
+                        this.saveStateToHistory(); 
+                        this.hideContextMenu();
+                    };
+
+                    document.getElementById('export-img-btn').onclick = () => {
+                        const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
+                        const link = document.createElement('a');
+                        link.download = `Pizarra_${this.currentPageId}.png`;
+                        link.href = dataURL;
+                        link.click();
+                        this.showToast('Imagen guardada exitosamente.');
+                        document.getElementById('drop-guardar').classList.add('hidden'); 
+                    };
+
+                    document.getElementById('export-pdf-btn').onclick = async () => {
+                        document.getElementById('drop-guardar').classList.add('hidden'); 
+                        if (typeof window.jspdf === 'undefined') {
+                            this.showToast('La librería PDF aún se está cargando. Intente en unos segundos.');
+                            return;
+                        }
+
+                        const inputPage = prompt('Ingrese el número de la pizarra a exportar (ej: 1, 2). Deje en blanco para exportar TODAS:');
+                        let pagesToExport = this.pages;
+                        
+                        if (inputPage && inputPage.trim() !== '') {
+                            const pageNum = parseInt(inputPage.trim(), 10);
+                            if (isNaN(pageNum) || pageNum < 1 || pageNum > this.pages.length) {
+                                this.showToast('Número de página inválido.');
+                                return;
+                            }
+                            pagesToExport = [this.pages[pageNum - 1]];
+                        }
+
+                        this.showToast('Generando documento PDF... Por favor espere.');
+                        const { jsPDF } = window.jspdf;
+                        
+                        const pdf = new jsPDF('l', 'px', [this.canvas.width, this.canvas.height]);
+                        const originalPageId = this.currentPageId;
+                        this.saveCurrentPage(); 
+
+                        for (let i = 0; i < pagesToExport.length; i++) {
+                            const page = pagesToExport[i];
+                            await new Promise(resolve => {
+                                this.canvas.loadFromJSON(page.json, () => {
+                                    this.canvas.renderAll();
+                                    setTimeout(() => {
+                                        const imgData = this.canvas.toDataURL({ format: 'jpeg', quality: 0.9 });
+                                        if (i > 0) pdf.addPage([this.canvas.width, this.canvas.height], 'l');
+                                        pdf.addImage(imgData, 'JPEG', 0, 0, this.canvas.width, this.canvas.height);
+                                        resolve();
+                                    }, 150); 
+                                });
+                            });
+                        }
+                        
+                        pdf.save(pagesToExport.length === 1 ? `Pizarra_Pagina_${inputPage.trim()}.pdf` : 'Pizarras_Completas.pdf');
+                        this.showToast('PDF generado exitosamente.');
+                        this.loadPage(originalPageId); 
+                    };
+
+                    document.getElementById('share-btn').onclick = () => document.getElementById('modal-share').classList.remove('hidden');
+                    document.getElementById('close-share').onclick = () => document.getElementById('modal-share').classList.add('hidden');
+                    document.getElementById('copy-share-btn').onclick = () => {
+                        navigator.clipboard.writeText(document.getElementById('share-code').value);
+                        this.showToast('Código copiado. Envíelo a sus invitados.');
+                    };
+                    
+                    document.getElementById('web-viewer-btn').onclick = () => {
+                        document.getElementById('drop-pro').classList.add('hidden'); 
+                        if (!navigator.onLine) {
+                            this.showToast('Acceso denegado: El Visor Web requiere conexión a Internet.');
+                            return;
+                        }
+                        const webViewer = document.getElementById('web-viewer');
+                        const webBtn = document.getElementById('web-viewer-btn');
+                        
+                        webViewer.classList.remove('hidden');
+                        document.getElementById('doc-viewer').classList.add('hidden');
+                        
+                        webBtn.classList.add('bg-[#FF8C00]', 'text-[#0A1420]', 'border-[#FF8C00]');
+                        webBtn.classList.remove('bg-[#1A2436]', 'text-gray-300', 'border-[#2a3a4e]');
+                    };
+                    
+                    document.getElementById('close-web-viewer').onclick = () => {
+                        document.getElementById('web-viewer').classList.add('hidden');
+                        
+                        const webBtn = document.getElementById('web-viewer-btn');
+                        webBtn.classList.remove('bg-[#FF8C00]', 'text-[#0A1420]', 'border-[#FF8C00]');
+                        webBtn.classList.add('bg-[#1A2436]', 'text-gray-300', 'border-[#2a3a4e]');
+                    };
+                    
+                    document.getElementById('close-viewer').onclick = () => document.getElementById('doc-viewer').classList.add('hidden');
+
+                    document.getElementById('panel-lines-btn').onclick = () => togglePanel('lines-panel');
+                    document.getElementById('panel-shapes2d-btn').onclick = () => togglePanel('shapes2d-panel');
+                    document.getElementById('panel-shapes3d-btn').onclick = () => togglePanel('shapes3d-panel');
+                    
+                    document.querySelectorAll('.close-panel-btn').forEach(btn => {
+                        btn.onclick = () => btn.parentElement.parentElement.classList.add('hidden');
+                    });
+                    
+                    document.querySelectorAll('.add-shape-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            this.addShape(btn.getAttribute('data-shape'));
+                            btn.parentElement.parentElement.classList.add('hidden');
+                        };
+                    });
+
+                    document.getElementById('brush-size-num').onchange = (e) => { 
+                        this.brushConfig.width = parseInt(e.target.value, 10); 
+                        if(this.currentTool === 'draw') this.updateBrushFromConfig(); 
+                    };
+                    document.getElementById('highlighter-size-num').onchange = (e) => { 
+                        this.highlighterConfig.width = parseInt(e.target.value, 10); 
+                        if(this.currentTool === 'highlighter') this.updateBrushFromConfig(); 
+                    };
+
+                    document.getElementById('brush-color').onchange = (e) => { 
+                        this.brushConfig.color = e.target.value; 
+                        this.updateBrushFromConfig(); 
+                        const active = this.canvas.getActiveObject();
+                        if (active) {
+                            this.updateShapeColors(active);
+                            this.canvas.renderAll();
+                            this.saveStateToHistory();
+                        }
+                        document.getElementById('drop-lapiz').classList.add('hidden');
+                    };
+                    
+                    document.querySelectorAll('.color-quick').forEach(btn => {
+                        btn.onclick = () => {
+                            const color = btn.getAttribute('data-color');
+                            document.getElementById('brush-color').value = color;
+                            this.brushConfig.color = color;
+                            this.updateBrushFromConfig();
+                            
+                            const active = this.canvas.getActiveObject();
+                            if(active) {
+                                if (active.type === 'i-text' || active.type === 'textbox') {
+                                    active.set('fill', color);
+                                } else {
+                                    this.updateShapeColors(active);
+                                }
+                                this.canvas.renderAll(); 
+                                this.saveStateToHistory();
+                            }
+                            document.getElementById('drop-lapiz').classList.add('hidden');
+                        };
+                    });
+                    
+                    document.querySelectorAll('.h-color-quick').forEach(btn => {
+                        btn.onclick = () => {
+                            this.highlighterConfig.color = btn.getAttribute('data-hcolor');
+                            if(this.currentTool !== 'highlighter') this.setTool('highlighter');
+                            else this.updateBrushFromConfig();
+                            document.getElementById('drop-resaltador').classList.add('hidden');
+                        };
+                    });
+
+                    const tools = ['select', 'draw', 'highlighter', 'eraser', 'pan'];
+                    tools.forEach(tool => { 
+                        const btn = document.getElementById(`${tool}-btn-float`);
+                        if(btn) {
+                            btn.onclick = (e) => {
+                                e.stopPropagation();
+                                this.setTool(tool);
+                                
+                                const allDrops = ['lapiz', 'resaltador', 'fuente', 'pizarra', 'guardar', 'pro'];
+                                let target = null;
+                                if(tool === 'draw') target = 'lapiz';
+                                if(tool === 'highlighter') target = 'resaltador';
+                                
+                                // Cerrar paneles de formas
+                                ['lines-panel','shapes2d-panel','shapes3d-panel'].forEach(pid => {
+                                    document.getElementById(pid).classList.add('hidden');
+                                });
+                                
+                                allDrops.forEach(id => {
+                                    const drop = document.getElementById(`drop-${id}`);
+                                    if(drop) {
+                                        if(id === target) drop.classList.toggle('hidden');
+                                        else drop.classList.add('hidden');
+                                    }
+                                });
+                            };
+                        }
+                    });
+                    
+                    // StopPropagation en dropdowns para que no se cierren al hacer clic dentro
+                    ['lapiz','resaltador','fuente','pizarra','guardar','pro'].forEach(id => {
+                        const drop = document.getElementById('drop-'+id);
+                        if(drop) drop.addEventListener('click', (e) => e.stopPropagation());
+                    });
+                    
+                    const shapes = ['text', 'sticky'];
+                    shapes.forEach(shape => { 
+                        const btn = document.getElementById(`${shape}-btn-float`);
+                        if(btn) {
+                            btn.onclick = (e) => {
+                                e.stopPropagation();
+                                this.addShape(shape); 
+                                
+                                if(shape === 'text') {
+                                    document.querySelectorAll('.quick-tool-horizontal').forEach(b => b.classList.remove('tool-active'));
+                                    btn.classList.add('tool-active');
+                                    
+                                    const dropdownToggles = ['lapiz', 'resaltador', 'fuente', 'pizarra', 'guardar', 'pro'];
+                                    dropdownToggles.forEach(id => {
+                                        const drop = document.getElementById(`drop-${id}`);
+                                        if(drop) {
+                                            if(id === 'fuente') drop.classList.remove('hidden');
+                                            else drop.classList.add('hidden');
+                                        }
+                                    });
+                                }
+                            };
+                        }
+                    });
+                    
+                    document.getElementById('bg-white').onclick = () => { 
+                        this.canvas.backgroundColor = '#F8F9FA'; 
+                        if(this.brushConfig.color.toLowerCase() === '#ffffff' || this.brushConfig.color.toLowerCase() === '#f8f9fa') {
+                            this.brushConfig.color = '#000000';
+                            document.getElementById('brush-color').value = '#000000';
+                            if(this.currentTool === 'draw') this.updateBrushFromConfig();
+                        }
+                        this.canvas.renderAll(); 
+                        if(this.currentTool === 'eraser') this.updateBrushFromConfig(); 
+                        document.getElementById('drop-pizarra').classList.add('hidden');
+                    };
+                    
+                    document.getElementById('bg-black').onclick = () => { 
+                        this.canvas.backgroundColor = '#000000'; 
+                        if(this.brushConfig.color === '#000000') {
+                            this.brushConfig.color = '#ffffff';
+                            document.getElementById('brush-color').value = '#ffffff';
+                            if(this.currentTool === 'draw') this.updateBrushFromConfig();
+                        }
+                        this.canvas.renderAll(); 
+                        if(this.currentTool === 'eraser') this.updateBrushFromConfig(); 
+                        document.getElementById('drop-pizarra').classList.add('hidden');
+                    };
+
+                    document.getElementById('bg-green').onclick = () => { 
+                        this.canvas.backgroundColor = '#064E3B'; 
+                        if(this.brushConfig.color === '#064E3B' || this.brushConfig.color === '#000000') {
+                            this.brushConfig.color = '#ffffff';
+                            document.getElementById('brush-color').value = '#ffffff';
+                            if(this.currentTool === 'draw') this.updateBrushFromConfig();
+                        }
+                        this.canvas.renderAll(); 
+                        if(this.currentTool === 'eraser') this.updateBrushFromConfig(); 
+                        document.getElementById('drop-pizarra').classList.add('hidden');
+                    };
+
+                    // Botón de líneas guía — ajustable, punteadas, color suave
+                    let gridLines = [];
+                    const gridBtn = document.getElementById('grid-btn');
+                    const gridSpacing = document.getElementById('grid-spacing');
+                    const gridSpacingVal = document.getElementById('grid-spacing-val');
+                    const dropGrid = document.getElementById('drop-grid');
+
+                    const drawGrid = (spacing) => {
+                        // Eliminar guías anteriores
+                        gridLines.forEach(l => this.canvas.remove(l));
+                        gridLines = [];
+                        const w = this.canvas.getWidth();
+                        const h = this.canvas.getHeight();
+                        // Crear patrón de puntos como fondo (rendimiento óptimo)
+                        const patCanvas = document.createElement('canvas');
+                        patCanvas.width = spacing;
+                        patCanvas.height = spacing;
+                        const pCtx = patCanvas.getContext('2d');
+                        pCtx.fillStyle = this.canvas.backgroundColor || '#F8F9FA';
+                        pCtx.fillRect(0, 0, spacing, spacing);
+                        pCtx.fillStyle = 'rgba(160, 170, 190, 0.5)';
+                        pCtx.beginPath();
+                        pCtx.arc(1, 1, 1.3, 0, Math.PI * 2);
+                        pCtx.fill();
+                        this._savedBg = this.canvas.backgroundColor;
+                        this.canvas.setBackgroundColor(new fabric.Pattern({ source: patCanvas, repeat: 'repeat' }), () => this.canvas.renderAll());
+                        this.canvas.renderAll();
+                        gridBtn.classList.add('tool-active');
+                    };
+
+                    const clearGrid = () => {
+                        gridLines.forEach(l => this.canvas.remove(l));
+                        gridLines = [];
+                        this.canvas.setBackgroundColor(this._savedBg || '#F8F9FA', () => this.canvas.renderAll());
+                        gridBtn.classList.remove('tool-active');
+                    };
+
+                    gridBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        // Cerrar otros dropdowns
+                        ['lapiz','resaltador','fuente','pizarra','guardar','pro'].forEach(id => {
+                            const d = document.getElementById('drop-'+id);
+                            if(d) d.classList.add('hidden');
+                        });
+                        ['lines-panel','shapes2d-panel','shapes3d-panel'].forEach(pid => {
+                            document.getElementById(pid).classList.add('hidden');
+                        });
+                        dropGrid.classList.toggle('hidden');
+                    };
+                    dropGrid.addEventListener('click', (e) => e.stopPropagation());
+
+                    gridSpacing.oninput = () => {
+                        gridSpacingVal.textContent = gridSpacing.value;
+                        if (gridLines.length > 0) drawGrid(parseInt(gridSpacing.value));
+                    };
+
+                    document.getElementById('grid-on-btn').onclick = () => {
+                        drawGrid(parseInt(gridSpacing.value));
+                        dropGrid.classList.add('hidden');
+                    };
+
+                    document.getElementById('grid-off-btn').onclick = () => {
+                        clearGrid();
+                        dropGrid.classList.add('hidden');
+                    };
+
+                    // Cerrar dropdown grid al clic fuera
+                    document.addEventListener('click', () => dropGrid.classList.add('hidden'));
+                    
+                    document.getElementById('new-page-bottom').onclick = () => this.createPage();
+
+                    document.getElementById('calculator-btn').onclick = () => {
+                        document.getElementById('modal-calc').classList.remove('hidden');
+                        document.getElementById('drop-pro').classList.add('hidden');
+                    };
+                    document.getElementById('close-calc').onclick = () => document.getElementById('modal-calc').classList.add('hidden');
+
+                    let mRec, chunks=[], activeStreams=[];
+                    document.getElementById('record-btn').onclick = async function() {
+                        document.getElementById('drop-pro').classList.add('hidden');
+                        if(!this.classList.contains('bg-red-700')){
+                            try { 
+                                const dispStream = await navigator.mediaDevices.getDisplayMedia({ video: { preferCurrentTab: true, displaySurface: "browser" }, audio: true });
+                                
+                                let micStream;
+                                try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch(e){}
+                                
+                                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                                const dest = actx.createMediaStreamDestination();
+                                if(dispStream.getAudioTracks().length > 0) actx.createMediaStreamSource(dispStream).connect(dest);
+                                if(micStream && micStream.getAudioTracks().length > 0) actx.createMediaStreamSource(micStream).connect(dest);
+                                
+                                const tracks = [...dispStream.getVideoTracks()];
+                                if(dest.stream.getAudioTracks().length > 0) tracks.push(dest.stream.getAudioTracks()[0]);
+                                
+                                const finalStream = new MediaStream(tracks);
+                                activeStreams = [dispStream, micStream];
+                                
+                                mRec = new MediaRecorder(finalStream);
+                                mRec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+                                mRec.onstop = () => { 
+                                    const a = document.createElement('a'); 
+                                    a.href = URL.createObjectURL(new Blob(chunks, {type:'video/webm'})); 
+                                    a.download = 'Clase_Pizarra.webm'; 
+                                    a.click(); 
+                                    chunks = []; 
+                                    activeStreams.forEach(s => s && s.getTracks().forEach(t => t.stop()));
+                                };
+                                mRec.start(); 
+                                this.classList.add('bg-red-700', 'text-white');
+                                this.classList.remove('text-red-400');
+                                this.innerHTML = '<i class="fas fa-stop w-5 text-center"></i> Detener Grabación'; 
+                            } catch(err){ 
+                                alert("Permiso de grabación cancelado o denegado."); 
+                            }
+                        } else { 
+                            mRec.stop(); 
+                            this.classList.remove('bg-red-700', 'text-white'); 
+                            this.classList.add('text-red-400');
+                            this.innerHTML = '<i class="fas fa-record-vinyl w-5 text-center"></i> Grabar Clase'; 
+                        }
+                    }
+                }
+            }
+            window.addEventListener('DOMContentLoaded', () => { window.pizarraInstance = new PizarraProPlus(); });
+        })();
+    </script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').then(() => {
+            console.log('Pizarra PRO+ — Modo offline activado');
+        }).catch(err => console.warn('SW registro falló:', err));
+    }
+    </script>
+</body></html>
