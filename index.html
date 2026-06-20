@@ -1,8 +1,8 @@
 <!DOCTYPE html><html lang="es"><head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#FF8C00">
     <link rel="manifest" href="./manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <title>Pizarra Digital Pro+ | Edición Docente | Gratis e Ilimitada</title>
     <meta name="description" content="Pizarra digital profesional y online. Incluye visor web, herramientas de dibujo, exportación en PDF e imagen. Disfruta de la versión PRO totalmente gratis y potencia tus clases virtuales sin límites de escritura.">
@@ -18,6 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/screenfull@5.2.0/dist/screenfull.min.js">
     </script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
     <!-- ========================================== -->
     <!-- CAPA 1: ESTILOS CSS - DISEÑO Y COMPONENTES -->
@@ -203,7 +204,7 @@
                     <div id="drop-lapiz" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
                         <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
                             <span class="text-xs text-gray-400 font-semibold">Grosor:</span>
-                            <input type="number" id="brush-size-num" min="1" max="50" value="5" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
+                            <input type="number" id="brush-size-num" min="1" max="50" value="3" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
                             <input type="color" id="brush-color" value="#000000" class="w-7 h-7 rounded-md cursor-pointer border-0 p-0 ml-1">
                         </div>
                         <div class="flex gap-1.5 justify-center">
@@ -487,22 +488,42 @@
     </div>
 
     <div id="modal-share" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div class="bg-[#1A2436] rounded-xl shadow-2xl p-6 w-96 border border-[#2a3a4e]">
+        <div class="bg-[#1A2436] rounded-xl shadow-2xl p-6 w-[420px] border border-[#2a3a4e]">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-white"><i class="fas fa-users mr-2 text-[#FF8C00]"></i>Compartir Pizarra</h3>
                 <button id="close-share" class="text-gray-400 hover:text-white px-2"><i class="fas fa-times"></i></button>
             </div>
-            <div class="mb-4">
-                <label class="text-xs text-gray-400 uppercase tracking-wider">Código de Sala Privada</label>
+
+            <!-- CREAR SALA -->
+            <div id="share-host-section" class="mb-4 p-3 bg-[#0A1420] border border-[#2a3a4e] rounded-lg">
+                <label class="text-xs text-gray-400 uppercase tracking-wider">Tu código de sala</label>
                 <div class="flex gap-2 mt-1">
-                    <input type="text" id="share-code" value="PIZ-84X-92M" class="flex-1 bg-[#0A1420] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest" readonly>
-                    <button id="copy-share-btn" class="bg-[#FF8C00] text-black px-4 rounded-lg hover:bg-[#e07e00] font-bold" data-tooltip="Copiar Código"><i class="fas fa-copy"></i></button>
+                    <input type="text" id="share-code" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest text-lg" readonly placeholder="...">
+                    <button id="copy-share-btn" class="bg-[#FF8C00] text-black px-4 rounded-lg hover:bg-[#e07e00] font-bold"><i class="fas fa-copy"></i></button>
+                </div>
+                <button id="create-room-btn" class="w-full mt-2 py-2 bg-green-700 text-white rounded-lg font-bold hover:bg-green-600 transition text-sm"><i class="fas fa-broadcast-tower mr-2"></i>Crear Sala</button>
+            </div>
+
+            <!-- UNIRSE A SALA -->
+            <div class="mb-4 p-3 bg-[#0A1420] border border-[#2a3a4e] rounded-lg">
+                <label class="text-xs text-gray-400 uppercase tracking-wider">Unirse a una sala</label>
+                <input type="text" id="join-name-input" class="w-full bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg text-sm mt-1 mb-1" placeholder="Tu nombre (ej: Juan)" maxlength="25">
+                <div class="flex gap-2">
+                    <input type="text" id="join-code-input" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest uppercase" placeholder="PIZ-XXXX" maxlength="8">
+                    <button id="join-room-btn" class="bg-blue-700 text-white px-4 rounded-lg hover:bg-blue-600 font-bold text-sm"><i class="fas fa-sign-in-alt mr-1"></i> Unirse</button>
                 </div>
             </div>
-            <div class="border-t border-[#2a3a4e] pt-4">
-                <h4 class="text-sm text-[#FF8C00] font-bold mb-2"><i class="fas fa-bell mr-1"></i> Peticiones de Acceso</h4>
-                <div class="bg-[#0A1420] border border-[#2a3a4e] rounded-lg p-3 text-center text-sm text-gray-500 italic">
-                    Esperando participantes... Las solicitudes de autorización aparecerán aquí para que usted las apruebe.
+
+            <!-- ESTADO Y PARTICIPANTES -->
+            <div class="border-t border-[#2a3a4e] pt-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-sm text-[#FF8C00] font-bold"><i class="fas fa-wifi mr-1"></i> Estado</h4>
+                    <span id="peer-count" class="text-xs text-gray-500 font-mono">0 / 50</span>
+                </div>
+                <div id="peer-status" class="bg-[#0A1420] border border-[#2a3a4e] rounded-lg p-2 text-center text-sm text-gray-500 italic mb-2">
+                    Sin conexión. Crea o únete a una sala.
+                </div>
+                <div id="participants-list" class="hidden max-h-40 overflow-y-auto flex flex-col gap-1">
                 </div>
             </div>
         </div>
@@ -528,7 +549,7 @@
                     this.pages = []; this.currentPageId = null; this.historyStack = []; this.historyIndex = -1;
                     this.isPanning = false; this.panStart = { x: 0, y: 0 };
                     
-                    this.brushConfig = { width: 5, color: '#000000' }; 
+                    this.brushConfig = { width: 3, color: '#000000' }; 
                     this.highlighterConfig = { width: 25, color: 'rgba(255, 235, 59, 0.4)' };
                     
                     this.currentTool = 'draw'; 
@@ -1687,11 +1708,200 @@
                         this.loadPage(originalPageId); 
                     };
 
+                    // ==========================================
+                    // CAPA 9: COLABORACIÓN EN TIEMPO REAL (PeerJS)
+                    // ==========================================
+                    this.peer = null;
+                    this.connections = [];
+                    this.hostConn = null;
+                    this.isHost = false;
+                    this.roomId = null;
+                    this._syncLock = false;
+                    this._peerNames = {};
+                    const MAX_PEERS = 50;
+                    const statusEl = document.getElementById('peer-status');
+                    const countEl = document.getElementById('peer-count');
+                    const codeInput = document.getElementById('share-code');
+                    const partList = document.getElementById('participants-list');
+                    const self = this;
+
+                    const genRoomCode = () => {
+                        const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                        let r = 'PIZ-';
+                        for(let i=0;i<4;i++) r += c[Math.floor(Math.random()*c.length)];
+                        return r;
+                    };
+
+                    const updateStatus = (msg) => { statusEl.innerHTML = msg; };
+
+                    const updateCount = () => {
+                        const n = self.isHost ? self.connections.length : (self.hostConn ? 1 : 0);
+                        countEl.textContent = n + ' / ' + MAX_PEERS;
+                    };
+
+                    const renderParticipants = () => {
+                        if (!self.isHost || self.connections.length === 0) {
+                            partList.classList.add('hidden');
+                            return;
+                        }
+                        partList.classList.remove('hidden');
+                        partList.innerHTML = '';
+                        self.connections.forEach((conn, idx) => {
+                            const name = self._peerNames[conn.peer] || ('Participante ' + (idx + 1));
+                            const row = document.createElement('div');
+                            row.className = 'flex items-center justify-between bg-[#1A2436] border border-[#2a3a4e] rounded-lg px-3 py-2';
+                            row.innerHTML = '<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span><span class="text-sm text-white truncate" style="max-width:200px">' + name + '</span></div>' +
+                                '<button class="kick-btn px-2 py-1 text-xs bg-red-900 text-red-300 border border-red-800 rounded hover:bg-red-700 hover:text-white font-bold transition" data-peer="' + conn.peer + '"><i class="fas fa-user-slash mr-1"></i>Expulsar</button>';
+                            partList.appendChild(row);
+                        });
+                        // Bind kick buttons
+                        partList.querySelectorAll('.kick-btn').forEach(btn => {
+                            btn.onclick = () => {
+                                const peerId = btn.dataset.peer;
+                                const conn = self.connections.find(c => c.peer === peerId);
+                                if (conn) {
+                                    try { conn.send({ type: 'kicked' }); } catch(e){}
+                                    setTimeout(() => conn.close(), 200);
+                                    self.connections = self.connections.filter(c => c !== conn);
+                                    delete self._peerNames[peerId];
+                                    renderParticipants();
+                                    updateCount();
+                                    updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Sala activa — ' + self.connections.length + ' participante(s)</span>');
+                                    self.showToast('Participante expulsado');
+                                }
+                            };
+                        });
+                    };
+
+                    const broadcastToAll = (data) => {
+                        self.connections.forEach(c => { try { c.send(data); } catch(e){} });
+                    };
+
+                    const sendCanvasState = (conn) => {
+                        conn.send({ type: 'canvas-full', data: JSON.stringify(self.canvas.toJSON()) });
+                    };
+
+                    const handleIncomingData = (data, fromConn) => {
+                        if (data.type === 'kicked') {
+                            self.hostConn = null;
+                            if (self.peer) self.peer.destroy();
+                            self.peer = null;
+                            updateStatus('<span class="text-red-400"><i class="fas fa-ban mr-1"></i> Fuiste expulsado de la sala por el anfitrión.</span>');
+                            updateCount();
+                            self.showToast('Fuiste expulsado de la sala');
+                            return;
+                        }
+                        if (data.type === 'set-name' && self.isHost && fromConn) {
+                            self._peerNames[fromConn.peer] = data.name;
+                            renderParticipants();
+                            return;
+                        }
+                        if (self._syncLock) return;
+                        self._syncLock = true;
+
+                        if (data.type === 'canvas-full') {
+                            self.canvas.loadFromJSON(data.data, () => {
+                                self.canvas.renderAll();
+                                self._syncLock = false;
+                            });
+                        } else if (data.type === 'canvas-update') {
+                            self.canvas.loadFromJSON(data.data, () => {
+                                self.canvas.renderAll();
+                                self._syncLock = false;
+                                if (self.isHost) {
+                                    self.connections.forEach(c => {
+                                        if (c !== fromConn) { try { c.send(data); } catch(e){} }
+                                    });
+                                }
+                            });
+                        } else { self._syncLock = false; }
+                    };
+
+                    const setupCanvasSync = () => {
+                        const sendUpdate = () => {
+                            if (self._syncLock) return;
+                            const msg = { type: 'canvas-update', data: JSON.stringify(self.canvas.toJSON()) };
+                            if (self.isHost) broadcastToAll(msg);
+                            else if (self.hostConn) { try { self.hostConn.send(msg); } catch(e){} }
+                        };
+                        self.canvas.on('object:added', sendUpdate);
+                        self.canvas.on('object:modified', sendUpdate);
+                        self.canvas.on('object:removed', sendUpdate);
+                        self.canvas.on('path:created', sendUpdate);
+                    };
+
+                    // CREAR SALA
+                    document.getElementById('create-room-btn').onclick = () => {
+                        const code = genRoomCode();
+                        self.roomId = code;
+                        self.isHost = true;
+                        codeInput.value = code;
+                        updateStatus('<i class="fas fa-spinner fa-spin mr-1"></i> Conectando...');
+                        self.peer = new Peer('pizarra-' + code, { debug: 0 });
+                        self.peer.on('open', () => {
+                            updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Sala activa — Comparte el código: <strong>' + code + '</strong></span>');
+                            self.showToast('Sala creada: ' + code);
+                            setupCanvasSync();
+                        });
+                        self.peer.on('connection', (conn) => {
+                            if (self.connections.length >= MAX_PEERS) { conn.close(); return; }
+                            self.connections.push(conn);
+                            conn.on('open', () => {
+                                sendCanvasState(conn);
+                                updateCount();
+                                updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Sala activa — ' + self.connections.length + ' participante(s)</span>');
+                                renderParticipants();
+                                self.showToast('Nuevo participante conectado');
+                            });
+                            conn.on('data', (data) => handleIncomingData(data, conn));
+                            conn.on('close', () => {
+                                self.connections = self.connections.filter(c => c !== conn);
+                                delete self._peerNames[conn.peer];
+                                updateCount();
+                                renderParticipants();
+                                updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Sala activa — ' + self.connections.length + ' participante(s)</span>');
+                            });
+                        });
+                        self.peer.on('error', (err) => {
+                            updateStatus('<span class="text-red-400"><i class="fas fa-exclamation-circle mr-1"></i> Error: ' + (err.type === 'unavailable-id' ? 'Código en uso, intenta de nuevo' : err.type) + '</span>');
+                        });
+                    };
+
+                    // UNIRSE A SALA
+                    document.getElementById('join-room-btn').onclick = () => {
+                        const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+                        const name = document.getElementById('join-name-input').value.trim() || 'Anónimo';
+                        if (!code || code.length < 4) { self.showToast('Ingresa un código válido'); return; }
+                        updateStatus('<i class="fas fa-spinner fa-spin mr-1"></i> Conectando a ' + code + '...');
+                        self.peer = new Peer(undefined, { debug: 0 });
+                        self.peer.on('open', () => {
+                            const conn = self.peer.connect('pizarra-' + code, { reliable: true });
+                            conn.on('open', () => {
+                                self.hostConn = conn;
+                                self.isHost = false;
+                                conn.send({ type: 'set-name', name: name });
+                                updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Conectado como <strong>' + name + '</strong> a sala <strong>' + code + '</strong></span>');
+                                updateCount();
+                                self.showToast('Conectado a sala ' + code);
+                                setupCanvasSync();
+                            });
+                            conn.on('data', (data) => handleIncomingData(data, null));
+                            conn.on('close', () => {
+                                self.hostConn = null;
+                                updateStatus('<span class="text-red-400"><i class="fas fa-times-circle mr-1"></i> Desconectado</span>');
+                                updateCount();
+                            });
+                        });
+                        self.peer.on('error', () => {
+                            updateStatus('<span class="text-red-400"><i class="fas fa-exclamation-circle mr-1"></i> Sala no encontrada</span>');
+                        });
+                    };
+
                     document.getElementById('share-btn').onclick = () => document.getElementById('modal-share').classList.remove('hidden');
                     document.getElementById('close-share').onclick = () => document.getElementById('modal-share').classList.add('hidden');
                     document.getElementById('copy-share-btn').onclick = () => {
-                        navigator.clipboard.writeText(document.getElementById('share-code').value);
-                        this.showToast('Código copiado. Envíelo a sus invitados.');
+                        const code = codeInput.value;
+                        if (code) { navigator.clipboard.writeText(code); self.showToast('Código copiado: ' + code); }
                     };
                     
                     document.getElementById('web-viewer-btn').onclick = () => {
@@ -1952,6 +2162,16 @@
                     document.addEventListener('click', () => dropGrid.classList.add('hidden'));
                     
                     document.getElementById('new-page-bottom').onclick = () => this.createPage();
+                    
+                    // Pantalla completa
+                    document.getElementById('fullscreen-btn').onclick = () => {
+                        if (typeof screenfull !== 'undefined' && screenfull.isEnabled) {
+                            screenfull.toggle();
+                        } else if (document.documentElement.requestFullscreen) {
+                            if (document.fullscreenElement) document.exitFullscreen();
+                            else document.documentElement.requestFullscreen();
+                        }
+                    };
 
                     document.getElementById('calculator-btn').onclick = () => {
                         document.getElementById('modal-calc').classList.remove('hidden');
@@ -2009,11 +2229,5 @@
             window.addEventListener('DOMContentLoaded', () => { window.pizarraInstance = new PizarraProPlus(); });
         })();
     </script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').then(() => {
-            console.log('Pizarra PRO+ — Modo offline activado');
-        }).catch(err => console.warn('SW registro falló:', err));
-    }
-    </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js").catch(()=>{})}</script>
 </body></html>
