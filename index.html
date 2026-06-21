@@ -115,6 +115,56 @@
         .toolbar-scroll-area {
             overflow: visible;
         }
+        #floating-toolbar.toolbar-vertical {
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            width: 50px !important;
+            max-width: 50px !important;
+            min-width: 50px !important;
+            max-height: 96vh;
+            left: 4px !important;
+            right: auto !important;
+            bottom: 2% !important;
+            top: 2% !important;
+            transform: none !important;
+            padding: 6px 4px !important;
+            gap: 1px !important;
+            overflow: visible !important;
+            border-radius: 14px !important;
+        }
+        #floating-toolbar.toolbar-vertical .toolbar-scroll-area {
+            flex-direction: column !important;
+            align-items: center !important;
+            width: 42px !important;
+            overflow: visible !important;
+            gap: 1px !important;
+        }
+        #floating-toolbar.toolbar-vertical .w-px.h-6 {
+            width: 30px !important; height: 1px !important; min-width: 30px !important;
+            min-height: 1px !important; margin: 1px 0 !important;
+        }
+        #floating-toolbar.toolbar-vertical .quick-tool-horizontal,
+        #floating-toolbar.toolbar-vertical button[class*="w-10 h-10"] {
+            width: 34px !important; height: 34px !important;
+            min-width: 34px !important; min-height: 34px !important;
+            flex-shrink: 0 !important; font-size: 13px !important;
+        }
+        #floating-toolbar.toolbar-vertical .relative {
+            position: relative; width: 34px !important;
+        }
+        #floating-toolbar.toolbar-vertical [id^="drop-"] {
+            position: absolute !important;
+            bottom: auto !important; top: -4px !important;
+            left: 42px !important; right: auto !important;
+            margin: 0 !important;
+            transform: none !important;
+            width: max-content !important;
+            z-index: 999 !important;
+        }
+        #floating-toolbar.toolbar-vertical #toolbar-orient-btn {
+            width: 30px; height: 18px; flex-shrink: 0; font-size: 10px;
+        }
     </style>
 </head>
 <body class="bg-[#0A1420] h-screen flex flex-col overflow-hidden font-sans">
@@ -188,6 +238,7 @@
             <div class="toolbar-scroll-area flex items-center gap-2 flex-shrink-0" style="max-width: 100%;">
                 <!-- Handle de arrastre -->
                 <span id="toolbar-drag-handle" class="cursor-grab px-1 text-gray-500 hover:text-white select-none text-lg leading-none flex-shrink-0" title="Arrastrar para mover la barra">⋮⋮</span>
+                <button id="toolbar-orient-btn" class="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-[#FF8C00] rounded transition flex-shrink-0 text-xs" title="Cambiar orientación"><i class="fas fa-exchange-alt"></i></button>
                 
                 <!-- ========================================== -->
                 <!-- SECCIÓN: HERRAMIENTAS RÁPIDAS BÁSICAS -->
@@ -204,7 +255,7 @@
                     <div id="drop-lapiz" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
                         <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
                             <span class="text-xs text-gray-400 font-semibold">Grosor:</span>
-                            <input type="number" id="brush-size-num" min="1" max="50" value="3" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
+                            <input type="number" id="brush-size-num" min="1" max="50" value="2" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
                             <input type="color" id="brush-color" value="#000000" class="w-7 h-7 rounded-md cursor-pointer border-0 p-0 ml-1">
                         </div>
                         <div class="flex gap-1.5 justify-center">
@@ -227,7 +278,7 @@
                     <div id="drop-resaltador" class="hidden absolute bottom-full mb-2 left-0 bg-[#0A1420] border border-[#2a3a4e] p-3 rounded-xl shadow-2xl flex flex-col gap-3 z-50 w-max">
                         <div class="flex items-center gap-2 border-b border-[#2a3a4e] pb-2">
                             <span class="text-xs text-gray-400 font-semibold">Grosor:</span>
-                            <input type="number" id="highlighter-size-num" min="10" max="100" value="25" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
+                            <input type="number" id="highlighter-size-num" min="10" max="100" value="20" class="w-12 text-center border border-[#2a3a4e] rounded-md text-xs bg-[#1A2436] text-white py-1">
                         </div>
                         <div class="flex gap-2 justify-center">
                             <button data-hcolor="rgba(255, 235, 59, 0.4)" class="h-color-quick w-7 h-7 rounded-md bg-yellow-400 border border-[#2a3a4e] hover:scale-110 transition shadow-sm"></button>
@@ -498,7 +549,7 @@
             <div id="share-host-section" class="mb-4 p-3 bg-[#0A1420] border border-[#2a3a4e] rounded-lg">
                 <label class="text-xs text-gray-400 uppercase tracking-wider">Tu código de sala</label>
                 <div class="flex gap-2 mt-1">
-                    <input type="text" id="share-code" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest text-lg" readonly placeholder="...">
+                    <input type="text" id="share-code" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center text-xs select-all" readonly placeholder="Clic en Crear Sala">
                     <button id="copy-share-btn" class="bg-[#FF8C00] text-black px-4 rounded-lg hover:bg-[#e07e00] font-bold"><i class="fas fa-copy"></i></button>
                 </div>
                 <button id="create-room-btn" class="w-full mt-2 py-2 bg-green-700 text-white rounded-lg font-bold hover:bg-green-600 transition text-sm"><i class="fas fa-broadcast-tower mr-2"></i>Crear Sala</button>
@@ -509,7 +560,7 @@
                 <label class="text-xs text-gray-400 uppercase tracking-wider">Unirse a una sala</label>
                 <input type="text" id="join-name-input" class="w-full bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg text-sm mt-1 mb-1" placeholder="Tu nombre (ej: Juan)" maxlength="25">
                 <div class="flex gap-2">
-                    <input type="text" id="join-code-input" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center tracking-widest uppercase" placeholder="PIZ-XXXX" maxlength="8">
+                    <input type="text" id="join-code-input" class="flex-1 bg-[#1A2436] text-white border border-[#2a3a4e] p-2 rounded-lg font-mono text-center text-xs" placeholder="Pegar código del anfitrión" maxlength="60">
                     <button id="join-room-btn" class="bg-blue-700 text-white px-4 rounded-lg hover:bg-blue-600 font-bold text-sm"><i class="fas fa-sign-in-alt mr-1"></i> Unirse</button>
                 </div>
             </div>
@@ -549,8 +600,8 @@
                     this.pages = []; this.currentPageId = null; this.historyStack = []; this.historyIndex = -1;
                     this.isPanning = false; this.panStart = { x: 0, y: 0 };
                     
-                    this.brushConfig = { width: 3, color: '#000000' }; 
-                    this.highlighterConfig = { width: 25, color: 'rgba(255, 235, 59, 0.4)' };
+                    this.brushConfig = { width: 2, color: '#000000' }; 
+                    this.highlighterConfig = { width: 20, color: 'rgba(255, 235, 59, 0.4)' };
                     
                     this.currentTool = 'draw'; 
                     this.clipboardObjects = null;
@@ -911,11 +962,13 @@
 
                         case 'sticky':
                             obj = new fabric.Textbox('Doble clic para editar...', {
-                                left: center.x, top: center.y, width: 220,
-                                fontSize: fontSize, fontFamily: fontFamily, fill: '#334155',
-                                backgroundColor: '#fef08a', padding: 15,
-                                shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 5, offsetX: 3, offsetY: 3 }),
-                                originX: 'center', originY: 'center', textAlign: 'center', splitByGrapheme: true
+                                left: center.x, top: center.y, width: 240,
+                                fontSize: 16, fontFamily: 'Poppins, sans-serif', fill: '#334155',
+                                backgroundColor: '#fef08a', padding: 16,
+                                shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.2)', blur: 6, offsetX: 2, offsetY: 2 }),
+                                originX: 'center', originY: 'center', textAlign: 'left',
+                                editable: true, lineHeight: 1.4,
+                                breakWords: true
                             });
                             obj.isNote = true;
                             break;
@@ -996,10 +1049,13 @@
                         let query = webUrlInput.value.trim();
                         if(query === '') return;
                         if (!/^https?:\/\//i.test(query) && !query.includes('.')) {
+                            // Búsqueda en Google (funciona en iframe)
                             webIframe.src = 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(query);
                         } else {
+                            // URL directa → abrir en nueva pestaña (los sitios bloquean iframes)
                             if (!/^https?:\/\//i.test(query)) query = 'https://' + query;
-                            webIframe.src = query;
+                            window.open(query, '_blank');
+                            this.showToast('Sitio abierto en nueva pestaña');
                         }
                     };
 
@@ -1837,8 +1893,18 @@
                         self.isHost = true;
                         codeInput.value = code;
                         updateStatus('<i class="fas fa-spinner fa-spin mr-1"></i> Conectando...');
-                        self.peer = new Peer('pizarra-' + code, { debug: 0 });
-                        self.peer.on('open', () => {
+                        const peerId = 'pdpro-' + code + '-' + Date.now().toString(36);
+                        self.peer = new Peer(peerId, {
+                            debug: 0,
+                            config: { iceServers: [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' }
+                            ]}
+                        });
+                        // Guardar el peer ID real para que los participantes puedan conectarse
+                        self.peer.on('open', (id) => {
+                            self._hostPeerId = id;
+                            codeInput.value = id;
                             updateStatus('<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Sala activa — Comparte el código: <strong>' + code + '</strong></span>');
                             self.showToast('Sala creada: ' + code);
                             setupCanvasSync();
@@ -1869,13 +1935,19 @@
 
                     // UNIRSE A SALA
                     document.getElementById('join-room-btn').onclick = () => {
-                        const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+                        const code = document.getElementById('join-code-input').value.trim();
                         const name = document.getElementById('join-name-input').value.trim() || 'Anónimo';
-                        if (!code || code.length < 4) { self.showToast('Ingresa un código válido'); return; }
-                        updateStatus('<i class="fas fa-spinner fa-spin mr-1"></i> Conectando a ' + code + '...');
-                        self.peer = new Peer(undefined, { debug: 0 });
+                        if (!code || code.length < 4) { self.showToast('Ingresa el código completo del anfitrión'); return; }
+                        updateStatus('<i class="fas fa-spinner fa-spin mr-1"></i> Conectando a sala...');
+                        self.peer = new Peer(undefined, {
+                            debug: 0,
+                            config: { iceServers: [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' }
+                            ]}
+                        });
                         self.peer.on('open', () => {
-                            const conn = self.peer.connect('pizarra-' + code, { reliable: true });
+                            const conn = self.peer.connect(code, { reliable: true });
                             conn.on('open', () => {
                                 self.hostConn = conn;
                                 self.isHost = false;
@@ -2170,6 +2242,30 @@
                         } else if (document.documentElement.requestFullscreen) {
                             if (document.fullscreenElement) document.exitFullscreen();
                             else document.documentElement.requestFullscreen();
+                        }
+                    };
+
+                    // Toggle orientación toolbar
+                    document.getElementById('toolbar-orient-btn').onclick = () => {
+                        const tb = document.getElementById('floating-toolbar');
+                        tb.classList.toggle('toolbar-vertical');
+                        const icon = document.querySelector('#toolbar-orient-btn i');
+                        const shapePanels = ['lines-panel', 'shapes2d-panel', 'shapes3d-panel'];
+                        if (tb.classList.contains('toolbar-vertical')) {
+                            icon.className = 'fas fa-arrows-alt-h';
+                            tb.style.cssText = '';
+                            shapePanels.forEach(id => {
+                                const p = document.getElementById(id);
+                                p.style.cssText = 'left:66px !important;bottom:auto !important;top:20% !important;transform:none !important;';
+                            });
+                            this.showToast('Barra vertical');
+                        } else {
+                            icon.className = 'fas fa-exchange-alt';
+                            tb.style.cssText = 'bottom:5rem;left:50%;transform:translateX(-50%);overflow:visible;';
+                            shapePanels.forEach(id => {
+                                document.getElementById(id).style.cssText = '';
+                            });
+                            this.showToast('Barra horizontal');
                         }
                     };
 
